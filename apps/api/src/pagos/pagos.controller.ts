@@ -147,7 +147,7 @@ class PasoV2Dto {
   decision?: string;
 }
 
-/** Métodos de pago, plan de fases, pago directo, pruebas y expediente (Cryptoville v2). */
+/** Métodos de pago, plan de fases, pago directo, pruebas y expediente (WorkVille v2). */
 @Controller()
 @UseGuards(SesionGuard)
 export class PagosController {

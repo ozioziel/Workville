@@ -1,6 +1,6 @@
 # Pasar a mainnet
 
-Cryptoville v2 está **preparado** para mainnet, pero **todavía no se lanzó**. Esta lista dice qué falta, quién lo hace y en qué orden. Nada de esto se hace solo: cada paso lo confirma una persona del equipo.
+WorkVille v2 está **preparado** para mainnet, pero **todavía no se lanzó**. Esta lista dice qué falta, quién lo hace y en qué orden. Nada de esto se hace solo: cada paso lo confirma una persona del equipo.
 
 > [!CAUTION]
 > Este texto es solo un ejemplo de lo que recomienda una IA. Para que esté completo y tenga validez, debe revisarlo un abogado.
@@ -10,7 +10,7 @@ Cryptoville v2 está **preparado** para mainnet, pero **todavía no se lanzó**.
 | Rol | Responsable de |
 |---|---|
 | **Claude (ya hecho)** | Código listo para las dos redes, revisión al arrancar, `.env.mainnet.example`, documentos legales de ejemplo, contrato v2 con sus pruebas y este documento |
-| **Equipo de Cryptoville** | Cuentas y llaves de los servicios, despliegue de los contratos, cuentas multifirma, Supabase nuevo, VPS, prueba completa en testnet |
+| **Equipo de WorkVille** | Cuentas y llaves de los servicios, despliegue de los contratos, cuentas multifirma, Supabase nuevo, VPS, prueba completa en testnet |
 | **Abogado** | Términos, privacidad, pagos y disputas, contenido, impuestos, custodia de fondos, KYC y datos personales en los países donde se opera |
 | **Auditor** | Auditoría externa de `contracts/escrow-v2` ([documento para el auditor](contrato-v2.md)) |
 

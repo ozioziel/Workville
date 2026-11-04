@@ -2,7 +2,7 @@
   "name": "@cryptoville/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Web de Cryptoville (React + Phaser)",
+  "description": "Web de WorkVille (React + Phaser)",
   "type": "module",
   "scripts": {
     "dev": "vite",

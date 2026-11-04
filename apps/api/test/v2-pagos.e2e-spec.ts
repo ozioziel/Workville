@@ -1,4 +1,4 @@
-// Cryptoville v2, fase 3 (pagos): métodos de pago, plan por etapas, garantía en el contrato v2,
+// WorkVille v2, fase 3 (pagos): métodos de pago, plan por etapas, garantía en el contrato v2,
 // pago directo y pruebas. Sin red: las transacciones se prueban en cadena-v2.spec.ts y en el contrato.
 import { Keypair } from '@stellar/stellar-sdk';
 import { createHash } from 'node:crypto';
@@ -145,7 +145,7 @@ describe('pruebas de cada fase', () => {
     const fase = await t.prisma.fase.findUniqueOrThrow({ where: { pedido_id_numero: { pedido_id: id, numero: 0 } } });
     await expect(pagos.huellaEntrega(id, fase)).rejects.toThrow(/falta archivo/);
 
-    // Un archivo que no se subió desde Cryptoville no se acepta.
+    // Un archivo que no se subió desde WorkVille no se acepta.
     await t.http().post(`/api/pedidos/${id}/pruebas`).set(con(prov)).send({ fase: 0, tipo: 'archivo', titulo: 'Diseño', ruta: 'otra/ruta.png' }).expect(400);
     const subida = await t.http().post(`/api/pedidos/${id}/pruebas/subida`).set(con(prov)).send({ fase: 0, tipo: 'application/pdf', tamano: 100 }).expect(201);
     expect(subida.body.ruta).toMatch(new RegExp(`^pedidos/${id}/0/${prov.id}/`));

@@ -45,7 +45,7 @@ interface DecisionDidit {
   } | null;
 }
 
-/** Estado de Didit → estado de la verificación en Cryptoville. */
+/** Estado de Didit → estado de la verificación en WorkVille. */
 function estadoDe(status: string | undefined): 'pendiente' | 'en_revision' | 'aprobada' | 'rechazada' {
   switch (status) {
     case 'Approved':
@@ -85,7 +85,7 @@ export function firmaDiditValida(secreto: string, cuerpo: Buffer, firma: string 
 
 /**
  * KYC con Didit (una persona = una cuenta).
- * - La persona se verifica en la página de Didit (documento + selfie); Cryptoville nunca ve esas fotos.
+ * - La persona se verifica en la página de Didit (documento + selfie); WorkVille nunca ve esas fotos.
  * - Cuando Didit responde (webhook firmado, o al consultar), se guarda el estado y una HUELLA del documento.
  * - Si la huella ya está en otra cuenta, la verificación queda "duplicada" y la persona no recibe la insignia.
  * Si Didit no está configurado (DIDIT_*), el KYC no se exige y todo sigue como antes.
@@ -200,7 +200,7 @@ export class KycService {
       await this.avisos.crear(
         usuarioId,
         'verificacion',
-        'Ese documento ya verificó otra cuenta de Cryptoville. Cada persona puede tener una sola cuenta (con varias wallets).',
+        'Ese documento ya verificó otra cuenta de WorkVille. Cada persona puede tener una sola cuenta (con varias wallets).',
       );
       return;
     }

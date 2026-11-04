@@ -292,7 +292,7 @@ export class LocalesService {
       if (inv!.funcion !== 'transfer') falla(`llama a "${inv!.funcion}" y el pago es una transferencia`);
       const [desde, hacia, monto] = inv!.args;
       if (desde !== direccion) falla('no la pagó esa wallet');
-      if (hacia !== s.tesoreria) falla('el dinero no fue a la tesorería de Cryptoville');
+      if (hacia !== s.tesoreria) falla('el dinero no fue a la tesorería de WorkVille');
       if (typeof monto !== 'bigint' || monto < BigInt(usdcAUnidades(precio))) falla(`el monto es menor que ${precio} USDC`);
       verificado = true;
     }

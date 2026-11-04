@@ -14,7 +14,7 @@ export const METODOS_ENTRADA: readonly MetodoEntrada[] = ['wallet', 'pollar', 'l
  */
 export function mensajeInicioSesion(p: { direccion: string; nonce: string; dominio: string; emitido: string; red?: string }): string {
   return [
-    'Cryptoville: iniciar sesión',
+    'WorkVille: iniciar sesión',
     `Dominio: ${p.dominio}`,
     ...(p.red ? [`Red: ${p.red}`] : []),
     `Wallet: ${p.direccion}`,
@@ -27,7 +27,7 @@ export function mensajeInicioSesion(p: { direccion: string; nonce: string; domin
 /** Mensaje para sumar otra wallet a la cuenta (lo firma la wallet nueva). */
 export function mensajeVincularWallet(p: { direccion: string; cuenta: string; nonce: string; dominio: string; emitido: string; red: string }): string {
   return [
-    'Cryptoville: sumar esta wallet a mi cuenta',
+    'WorkVille: sumar esta wallet a mi cuenta',
     `Dominio: ${p.dominio}`,
     `Red: ${p.red}`,
     `Wallet nueva: ${p.direccion}`,

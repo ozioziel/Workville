@@ -1,4 +1,4 @@
-# Workville
+# WorkVille
 
 **Un pueblo digital donde las personas ofrecen sus servicios, los encuentran y se pagan de forma segura con Stellar.**
 
@@ -6,7 +6,7 @@ Recorres un pueblo en 2D, dibujado en vectores, con cuatro villas (**Creativo, T
 
 Funciona para los dos lados con un interruptor arriba al centro, que cambia el **modo de la villa**:
 - **«Quiero contratar»:** las casas son los locales de los proveedores.
-- **«Quiero trabajar»:** las mismas villas muestran una casa por cada cartel **«Se busca»** (lo que alguien necesita). Entras y mandas tu propuesta. El pago queda **en garantía en un contrato inteligente de Soroban**: se libera al proveedor cuando confirmas, o vuelve a ti si no entrega. Si hay un desacuerdo, el equipo de Workville actúa como árbitro. Cada usuario construye su **reputación** con reseñas ligadas a pagos reales.
+- **«Quiero trabajar»:** las mismas villas muestran una casa por cada cartel **«Se busca»** (lo que alguien necesita). Entras y mandas tu propuesta. El pago queda **en garantía en un contrato inteligente de Soroban**: se libera al proveedor cuando confirmas, o vuelve a ti si no entrega. Si hay un desacuerdo, el equipo de WorkVille actúa como árbitro. Cada usuario construye su **reputación** con reseñas ligadas a pagos reales.
 
 **Novedades de la v2** (preparada para mainnet, todavía en **testnet**):
 - **Tres formas de pagar:** directo (1%), con garantía (3%) o **por etapas** (3% por fase), con un plan de fases que se acuerda antes de pagar y una prueba por cada fase.
@@ -47,10 +47,12 @@ Necesitas Node 22 o superior, Docker Desktop abierto y, para los contratos, Rust
 
 ```bash
 npm install
+npm run hooks
 npm run setup
 npm run dev
 ```
 
+- `npm run hooks` activa los hooks de git del repo (una vez por clon): el commit se rechaza si su mensaje atribuye autoría a una IA. El CI revisa lo mismo en cada PR.
 - `npm run setup` levanta Supabase local, crea el `.env`, aplica las migraciones, genera las wallets de ejemplo y carga los datos.
 - `npm run dev` levanta la API en el puerto 3000 y la web en el 5173.
 
@@ -102,6 +104,6 @@ Código abierto bajo la licencia [MIT](LICENSE).
 ## Créditos
 
 - Fuente: [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) (SIL Open Font License), en toda la interfaz y en los letreros del mapa.
-- Arte de las villas, las casas y los personajes: dibujado en vectores para Workville (`apps/web/src/arte/`). Los personajes están inspirados en los de *Tiny Dungeon* de Kenney.
+- Arte de las villas, las casas y los personajes: dibujado en vectores para WorkVille (`apps/web/src/arte/`). Los personajes están inspirados en los de *Tiny Dungeon* de Kenney.
 - Gráficos anteriores: **[Kenney](https://kenney.nl)**, paquetes *Tiny Town* y *Tiny Dungeon*, licencia **CC0** (dominio público). Gracias, Kenney. Ya no se usan en el pueblo, pero se conservan con sus licencias en `apps/web/public/assets/kenney/`.
 - Fuente anterior de títulos: [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans) (SIL Open Font License). Ya no se usa.

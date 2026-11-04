@@ -302,7 +302,7 @@ export interface PasoPedido {
   declarado_por: string;
   verificado_por: string | null;
   verificado_en: string | null;
-  /** Cryptoville leyó la transacción en la red y coincide con el pedido. */
+  /** WorkVille leyó la transacción en la red y coincide con el pedido. */
   en_cadena?: boolean;
   ledger?: number | null;
   creado_en: string;

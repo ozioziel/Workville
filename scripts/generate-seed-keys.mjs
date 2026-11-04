@@ -13,7 +13,7 @@ const archivo = path.join(raiz, '.seed-keys.json');
 const forzar = process.argv.includes('--forzar');
 
 export const USUARIOS_EJEMPLO = [
-  { clave: 'arbitro', nombre: 'Equipo Cryptoville', rol: 'arbitro' },
+  { clave: 'arbitro', nombre: 'Equipo WorkVille', rol: 'arbitro' },
   { clave: 'ana', nombre: 'Ana Ruiz', rol: 'usuario' },
   { clave: 'luis', nombre: 'Luis Méndez', rol: 'usuario' },
   { clave: 'sofia', nombre: 'Sofía Paredes', rol: 'usuario' },

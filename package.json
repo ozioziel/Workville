@@ -13,6 +13,7 @@
   },
   "scripts": {
     "setup": "node scripts/setup-local.mjs",
+    "hooks": "git config core.hooksPath .githooks",
     "dev": "npm run build -w @cryptoville/shared && concurrently -k -n shared,api,web -c gray,blue,green \"npm run dev -w @cryptoville/shared\" \"npm run dev -w @cryptoville/api\" \"npm run dev -w @cryptoville/web\"",
     "build": "npm run build -w @cryptoville/shared && npm run build -w @cryptoville/api && npm run build -w @cryptoville/web",
     "test": "npm run build -w @cryptoville/shared && npm run test -w @cryptoville/shared && npm run test -w @cryptoville/api && npm run test -w @cryptoville/web",

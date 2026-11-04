@@ -1,4 +1,4 @@
-// Cryptoville v2, fase 4: varios locales por persona, el pago del local extra y las propuestas
+// WorkVille v2, fase 4: varios locales por persona, el pago del local extra y las propuestas
 // a un «Se busca» con el local elegido y su plan de fases. Sin red: el pago se declara con su hash.
 import { Keypair } from '@stellar/stellar-sdk';
 import { randomBytes } from 'node:crypto';

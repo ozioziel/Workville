@@ -1,6 +1,6 @@
-# Contrato de escrow de Cryptoville
+# Contrato de escrow de WorkVille
 
-El cliente deposita el pago al crear el pedido y el contrato lo retiene. Después lo **libera** al proveedor (menos la comisión) o lo **reembolsa** al cliente. Si hay desacuerdo, el **admin del contrato** (el equipo de Cryptoville) actúa como árbitro.
+El cliente deposita el pago al crear el pedido y el contrato lo retiene. Después lo **libera** al proveedor (menos la comisión) o lo **reembolsa** al cliente. Si hay desacuerdo, el **admin del contrato** (el equipo de WorkVille) actúa como árbitro.
 
 Montos en unidades del token: el USDC de prueba tiene 7 decimales, así que `1 USDC = 10_000_000`. Las fechas van en segundos Unix.
 

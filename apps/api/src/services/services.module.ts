@@ -136,7 +136,7 @@ export class ServicesController {
     if (!url) return null;
     const base = `${this.config.supabase.urlPublica}/storage/v1/object/public/fotos/`;
     if (!url.startsWith(base) || url.length > 500) {
-      throw new ForbiddenException('La foto debe subirse desde Cryptoville');
+      throw new ForbiddenException('La foto debe subirse desde WorkVille');
     }
     return url;
   }

@@ -1,4 +1,4 @@
-# Arquitectura de Cryptoville (v1 y v2)
+# Arquitectura de WorkVille (v1 y v2)
 
 > Las secciones de arriba describen la **v1** y siguen valiendo. Lo nuevo de la **v2** (firmar en la app, contrato v2, confianza, pagos por fases, varios locales, sectores, portafolio y personas en línea) está en [v2: qué cambió](#v2-qué-cambió), al final.
 

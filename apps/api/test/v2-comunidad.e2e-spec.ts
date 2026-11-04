@@ -1,4 +1,4 @@
-// Cryptoville v2, fase 4 (comunidad): portafolio (experiencia y proyectos), proyectos adjuntos a las propuestas
+// WorkVille v2, fase 4 (comunidad): portafolio (experiencia y proyectos), proyectos adjuntos a las propuestas
 // y chat por cercanía (límite de frecuencia, bloqueos, RLS y borrado a los 7 días).
 import { CercaniaService } from '../src/cercania/cercania.module';
 import { clienteCon, con, usarApp, type Sesion } from './ayudas';
@@ -23,7 +23,7 @@ describe('portafolio', () => {
     const e = await t.http().post('/api/portafolio/experiencias').set(con(s)).send({ puesto: 'Diseñadora', lugar: 'Estudio Norte', desde: '2024-01-01', hasta: null }).expect(201);
     expect(e.body).toMatchObject({ puesto: 'Diseñadora', hasta: null });
 
-    // Solo https, solo YouTube y Vimeo, y fotos subidas a Cryptoville.
+    // Solo https, solo YouTube y Vimeo, y fotos subidas a WorkVille.
     await t.http().post('/api/portafolio/proyectos').set(con(s)).send(proyecto({ enlaces: [{ url: 'http://inseguro.com' }] })).expect(400);
     await t.http().post('/api/portafolio/proyectos').set(con(s)).send(proyecto({ videos: [{ tipo: 'youtube', url: 'https://videos-raros.io/watch?v=dQw4w9WgXcQ' }] })).expect(400);
     await t.http().post('/api/portafolio/proyectos').set(con(s)).send(proyecto({ fotos: ['https://otro-sitio.com/foto.png'] })).expect(403);

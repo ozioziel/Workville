@@ -19,7 +19,7 @@ Tiempo estimado la primera vez: 30–40 minutos.
 | Cuenta en `.seed-keys.json` | Papel |
 |---|---|
 | `emisor_usdc` | Despliega el **USDC de prueba** y lo emite (admin del token) |
-| `usuarios[arbitro]` (Equipo Cryptoville) | Despliega el **escrow**, es su **admin** (árbitro) y su **tesorería** (recibe la comisión) |
+| `usuarios[arbitro]` (Equipo WorkVille) | Despliega el **escrow**, es su **admin** (árbitro) y su **tesorería** (recibe la comisión) |
 | `ana`, `luis`, `sofia`, `diego` | Clientes y proveedores de la demo |
 
 > **Consejo:** importa las 6 llaves secretas en Freighter (*Add account → Import a Stellar secret key*), con un nombre para cada una. Así, en el Lab solo cambias de cuenta en Freighter según quién tenga que firmar.
@@ -84,7 +84,7 @@ Para comprobar un saldo, usa la función `balance` con `id` = la dirección. Es 
 ## Paso 3. Desplegar el contrato de escrow
 
 1. **Smart contracts → Upload and deploy contract**.
-2. **Source account:** la dirección del **árbitro** (Equipo Cryptoville).
+2. **Source account:** la dirección del **árbitro** (Equipo WorkVille).
 3. **Upload contract:** `contracts/dist/cryptoville_escrow.wasm`. Luego **Build upload transaction**, firma con la cuenta del árbitro y pulsa **Upload contract**.
 4. **Deploy contract:** llena el constructor:
 
@@ -117,7 +117,7 @@ PLAZO_REVISION_SEG=259200
 
 La API lee estas variables al arrancar. Después, el botón **«Abrir el contrato en Stellar Lab»** de la app ya apunta a tu contrato.
 
-> El árbitro de la app es el usuario con rol `arbitro` en la base de datos (en los datos de ejemplo, «Equipo Cryptoville»). Para resolver disputas, su wallet debe ser la misma que el `admin` del escrow.
+> El árbitro de la app es el usuario con rol `arbitro` en la base de datos (en los datos de ejemplo, «Equipo WorkVille»). Para resolver disputas, su wallet debe ser la misma que el `admin` del escrow.
 
 ---
 
@@ -213,7 +213,7 @@ El contrato v2 (`contracts/escrow-v2`) suma los pagos **por etapas** (1 a 5 fase
 
 | Cuenta | Papel | En testnet |
 |---|---|---|
-| `admin` | Configura el contrato y propone actualizaciones | Puede ser la del Equipo Cryptoville. En mainnet, **multifirma** |
+| `admin` | Configura el contrato y propone actualizaciones | Puede ser la del Equipo WorkVille. En mainnet, **multifirma** |
 | `arbitro` | Resuelve disputas | Otra cuenta (no la misma que el admin). En mainnet, multifirma |
 | Tesorería | Recibe las comisiones y el pago de los locales extra | Otra cuenta, con trustline del token |
 | Llave de mantenimiento | La usa la API para ejecutar vencimientos y `extender` | Una cuenta nueva con un poco de XLM (Friendbot). No necesita USDC |

@@ -25,7 +25,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 **Para qué:** quien no tiene USDC paga escaneando un QR con la app de su banco (QR Simple en Bolivia). Una rampa (proveedor de cambio con licencia) recibe los bolivianos y manda USDC a su wallet. Después la persona confirma el pago de siempre (garantía, etapas o directo). También se puede recargar sin un pedido: en el saldo de arriba → «Recargar con el QR de tu banco» (`PanelRecargar`), con la misma rampa simulada.
 
 **Qué es de mentira** (solo con `RAMPA_SIMULADA=si`, que la API rechaza en mainnet):
-- **El QR:** es un texto que empieza con `SIMULADO-CRYPTOVILLE|QR-SIMPLE|…`. Ningún banco lo puede cobrar.
+- **El QR:** es un texto que empieza con `SIMULADO-WORKVILLE|QR-SIMPLE|…`. Ningún banco lo puede cobrar.
 - **El tipo de cambio:** fijo, **Bs 6,96 por dólar**, y una comisión de **1 %**. Están en `RAMPA_SIMULADA` de `packages/shared/src/rampas.ts`.
 - **El pago del banco:** el botón «Simular el pago desde el banco (solo pruebas)» hace de banco. La API emite USDC de prueba a la wallet de la persona con la llave del **emisor del USDC de prueba**. Esa llave sale de `RAMPA_SIMULADA_LLAVE` o, en tu PC, de `.seed-keys.json`.
   - Esa llave tiene que ser la del admin del token de `PAYMENT_TOKEN_ID`. En un clon nuevo, `npm run setup` genera un `.seed-keys.json` con un emisor nuevo que no es el admin: pide la llave al equipo y ponla en `RAMPA_SIMULADA_LLAVE`.
@@ -59,18 +59,18 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 3. **Revisar el monto que se manda.** El código cotiza **en bolivianos** (`amount` en la moneda local, con el tipo de cambio simulado como aproximación). Hay que confirmar si Pollar espera el monto en la moneda local o en USDC.
 4. **Firmas pendientes.** Si la respuesta trae `pendingSignature` (SEP-10 o `withdraw_payment`), el código **no la maneja todavía**: hay que firmarla con la wallet de Pollar y mandarla con `submitRampSignature`.
 5. **KYC de la rampa:** si responde `kycRequired`, la persona sigue el `kycUrl`. Hay que ver si se puede reusar el KYC de Didit para no pedirlo dos veces.
-6. **El token:** en testnet la rampa real entregaría USDC «de verdad» de testnet, **no** el USDC de prueba de Cryptoville (`PAYMENT_TOKEN_ID`). Por eso en testnet solo existe la rampa simulada. En mainnet, `PAYMENT_TOKEN_ID` tiene que ser el USDC que entrega la rampa.
+6. **El token:** en testnet la rampa real entregaría USDC «de verdad» de testnet, **no** el USDC de prueba de WorkVille (`PAYMENT_TOKEN_ID`). Por eso en testnet solo existe la rampa simulada. En mainnet, `PAYMENT_TOKEN_ID` tiene que ser el USDC que entrega la rampa.
 
 Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/propuestas/pagos-con-qr-bolivia.md`, que es un archivo local fuera de git.
 
 > [!CAUTION]
 > Este texto es solo un ejemplo de lo que recomienda una IA. Para que esté completo y tenga validez, debe revisarlo un abogado.
 >
-> (Qué licencia necesita el proveedor de cambio en Bolivia, qué le toca a Cryptoville si no custodia dinero y los controles contra el lavado de dinero.)
+> (Qué licencia necesita el proveedor de cambio en Bolivia, qué le toca a WorkVille si no custodia dinero y los controles contra el lavado de dinero.)
 
 ## 4 y 5. Entrar con Google y con el correo
 
-**Es real, no simulado:** usa el login de Pollar (`login({ provider: 'google' })`, en una ventana de Google). La app «Cryptoville» de Pollar tiene encendidos Google y el correo; se comprobó con su `applications/config`.
+**Es real, no simulado:** usa el login de Pollar (`login({ provider: 'google' })`, en una ventana de Google). La app «WorkVille» de Pollar tiene encendidos Google y el correo; se comprobó con su `applications/config`.
 
 **Google está apagado (8 oct 2026):** en la prueba con una cuenta de Google no funcionó. El botón solo aparece con `POLLAR_GOOGLE=si`; sin eso, el botón grande vuelve a ser «Entrar con tu correo». Antes de encenderlo, revisar con Pollar por qué falla (su panel marca el login como «próximamente»).
 

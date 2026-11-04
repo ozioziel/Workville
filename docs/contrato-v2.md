@@ -13,7 +13,7 @@ Documento para quien audite el contrato. Describe qué hace, quién puede llamar
 | **Pago por etapas** | Igual, con un plan de **2 a 5 fases**, cada una con su monto y su fecha límite. Se entrega y se libera fase por fase |
 | **Pago directo** | Sin garantía: en la misma llamada el contrato reparte el pago (proveedor y comisión). No admite disputa |
 
-La app (Cryptoville) arma las transacciones; las firma la wallet de cada persona. El servidor no firma pagos. La única llave del servidor es la **llave de mantenimiento**, que solo llama a funciones que cualquiera puede llamar (vencimientos y `extender`) y nunca puede mover dinero hacia sí misma.
+La app (WorkVille) arma las transacciones; las firma la wallet de cada persona. El servidor no firma pagos. La única llave del servidor es la **llave de mantenimiento**, que solo llama a funciones que cualquiera puede llamar (vencimientos y `extender`) y nunca puede mover dinero hacia sí misma.
 
 ## Roles
 

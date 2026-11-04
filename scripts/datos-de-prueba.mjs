@@ -1,4 +1,4 @@
-// Datos de prueba de Cryptoville v2: cuentas «prueba-…» listas para probar cada función, SOLO en local y testnet.
+// Datos de prueba de WorkVille v2: cuentas «prueba-…» listas para probar cada función, SOLO en local y testnet.
 //
 // Uso (desde la raíz del proyecto):
 //   npm run datos:prueba -- --llaves   1) genera las llaves y muestra las direcciones para desplegar el contrato v2
@@ -97,7 +97,7 @@ async function friendbot(direccion) {
 }
 
 // ---------------------------------------------------------------
-// API de Cryptoville (con reintentos si el límite de peticiones frena)
+// API de WorkVille (con reintentos si el límite de peticiones frena)
 // ---------------------------------------------------------------
 
 async function api(ruta, { token, cuerpo, metodo } = {}) {
@@ -217,7 +217,7 @@ Listo: ${path.relative(raiz, ARCHIVO_LLAVES)} (solo testnet, no se sube a git).
 1) Despliega el contrato v2 en Stellar Lab (docs/guia-stellar-lab.md, sección «Contrato v2») con:
      arbitro    = ${ll.cuentas['prueba-arbitro'].publica}
      tesoreria  = ${ll.extra.tesoreria.publica}
-     admin      = tu cuenta (por ejemplo, la del Equipo Cryptoville de .seed-keys.json)
+     admin      = tu cuenta (por ejemplo, la del Equipo WorkVille de .seed-keys.json)
      token      = tu PAYMENT_TOKEN_ID
 
 2) Pon en tu .env:

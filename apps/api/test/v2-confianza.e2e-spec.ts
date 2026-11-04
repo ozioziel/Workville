@@ -1,4 +1,4 @@
-// Cryptoville v2, fase 2 (confianza): KYC, reportar y bloquear, avisos fuera de la app.
+// WorkVille v2, fase 2 (confianza): KYC, reportar y bloquear, avisos fuera de la app.
 import { clienteCon, con, usarApp } from './ayudas';
 import { firmaDiditValida, huellaDocumento } from '../src/kyc/kyc.module';
 import { createHmac } from 'node:crypto';

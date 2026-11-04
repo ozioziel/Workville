@@ -1,0 +1,4 @@
+#!/bin/sh
+# Rechaza el commit si el mensaje atribuye autoría a una IA (regla del equipo, ver CLAUDE.md).
+# Se activa una vez por clon con: npm run hooks
+exec node scripts/revisar-autoria.mjs --archivo "$1"
