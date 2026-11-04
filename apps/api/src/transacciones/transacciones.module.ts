@@ -259,7 +259,7 @@ export class TransaccionesService {
       throw new BadRequestException('La transacción firmada no se pudo leer');
     }
     // La wallet tiene que haber firmado exactamente lo que armó la API (mismo hash), no otra cosa.
-    if (hash !== preparada.hash) throw new BadRequestException('La transacción firmada no es la que armó Cryptoville');
+    if (hash !== preparada.hash) throw new BadRequestException('La transacción firmada no es la que armó WorkVille');
 
     const marcada = await this.prisma.transaccionPreparada.updateMany({ where: { id: preparada.id, usada_en: null }, data: { usada_en: new Date() } });
     if (marcada.count !== 1) throw new ConflictException('Esa transacción ya se envió');

@@ -103,7 +103,7 @@ class EnlaceDto {
 }
 
 class VideoDto {
-  /** mux: un video subido a Cryptoville (Mux) · youtube / vimeo: un enlace. */
+  /** mux: un video subido a WorkVille (Mux) · youtube / vimeo: un enlace. */
   @IsIn(['mux', 'youtube', 'vimeo'])
   tipo: 'mux' | 'youtube' | 'vimeo';
 
@@ -286,7 +286,7 @@ export class PortafolioService implements OnModuleInit {
   /** Solo fotos subidas al bucket "fotos" de este Supabase (igual que las de los servicios). */
   private validarFoto(url: string): string {
     const base = `${this.config.supabase.urlPublica}/storage/v1/object/public/fotos/`;
-    if (!url.startsWith(base) || url.length > 500) throw new ForbiddenException('Las fotos deben subirse desde Cryptoville');
+    if (!url.startsWith(base) || url.length > 500) throw new ForbiddenException('Las fotos deben subirse desde WorkVille');
     return url;
   }
 

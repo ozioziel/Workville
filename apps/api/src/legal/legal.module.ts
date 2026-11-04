@@ -126,7 +126,7 @@ export class ComentariosController {
   @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10_000 : 10, ttl: 60_000 } })
   async crear(@UsuarioActual() yo: Usuario, @Body() dto: ComentarioDto) {
     if (dto.captura_ruta && !dto.captura_ruta.startsWith(`usuarios/${yo.id}/`)) {
-      throw new BadRequestException('La captura tiene que subirse desde Cryptoville');
+      throw new BadRequestException('La captura tiene que subirse desde WorkVille');
     }
     const comentario = await this.prisma.comentario.create({
       data: {

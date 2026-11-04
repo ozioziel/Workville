@@ -1,4 +1,4 @@
-// Documentos legales de Cryptoville.
+// Documentos legales de WorkVille.
 //
 // - El texto de cada documento está en apps/web/src/legal/<id>.md (Markdown) y se ve dentro de la app.
 // - Cuando cambies un documento, sube su `version` aquí y en el archivo: la app vuelve a pedir que lo acepten.

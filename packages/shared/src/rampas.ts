@@ -1,5 +1,5 @@
 // Rampas: pasar de bolivianos a USDC (pagar con el QR del banco) y de USDC a la cuenta del banco.
-// Cryptoville nunca recibe ni guarda dinero: lo cambia un proveedor con licencia (en mainnet, Pollar).
+// WorkVille nunca recibe ni guarda dinero: lo cambia un proveedor con licencia (en mainnet, Pollar).
 //
 // ⚠ SIMULADO: en testnet no hay una rampa real para el «USDC de prueba», así que todo lo de RAMPA_SIMULADA
 // (tipo de cambio, comisión, bancos, el QR) es de mentira, para poder probar el flujo completo.
@@ -64,7 +64,7 @@ export function cotizarRampaSimulada(sentido: SentidoRampa, montoUsdc: string | 
 
 /** Texto del QR simulado. Empieza con SIMULADO para que ninguna app de banco lo tome por un cobro real. */
 export function qrRampaSimulada(referencia: string, montoLocal: string, moneda: string = RAMPA_SIMULADA.moneda): string {
-  return `SIMULADO-CRYPTOVILLE|QR-SIMPLE|${moneda}|${montoLocal}|${referencia}`;
+  return `SIMULADO-WORKVILLE|QR-SIMPLE|${moneda}|${montoLocal}|${referencia}`;
 }
 
 export const ETIQUETA_ESTADO_RAMPA: Record<EstadoRampa, string> = {

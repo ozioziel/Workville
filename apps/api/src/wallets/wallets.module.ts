@@ -75,7 +75,7 @@ export class WalletsController {
   async desafio(@UsuarioActual() yo: Usuario, @Body() dto: DireccionDto) {
     if (!esDireccionValida(dto.direccion)) throw new BadRequestException('La dirección de la wallet no es válida');
     if (await this.prisma.wallet.findUnique({ where: { direccion: dto.direccion } })) {
-      throw new ConflictException('Esa wallet ya está en una cuenta de Cryptoville');
+      throw new ConflictException('Esa wallet ya está en una cuenta de WorkVille');
     }
     if ((await this.prisma.wallet.count({ where: { usuario_id: yo.id } })) >= MAX_WALLETS) {
       throw new ConflictException(`Una cuenta puede tener hasta ${MAX_WALLETS} wallets`);
@@ -124,7 +124,7 @@ export class WalletsController {
       });
       return serializar(wallet);
     } catch {
-      throw new ConflictException('Esa wallet ya está en una cuenta de Cryptoville');
+      throw new ConflictException('Esa wallet ya está en una cuenta de WorkVille');
     }
   }
 

@@ -167,7 +167,7 @@ export class VideosService {
       try {
         await this.aplicarAsset(evento.data);
       } catch {
-        // Un video que no es de Cryptoville: se ignora.
+        // Un video que no es de WorkVille: se ignora.
       }
     }
     return { ok: true };

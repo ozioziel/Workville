@@ -1,4 +1,4 @@
-// Esquema de la base de datos de Cryptoville (Postgres de Supabase).
+// Esquema de la base de datos de WorkVille (Postgres de Supabase).
 //
 // - Las tablas viven en el schema `public`. `usuarios.id` es el mismo id de `auth.users`
 //   (la llave foránea y las políticas RLS están en las migraciones SQL).
@@ -855,7 +855,7 @@ model MensajeCercania {
 }
 
 /// Recarga (bolivianos → USDC con el QR del banco) o retiro (USDC → cuenta del banco) con una rampa.
-/// Cryptoville no toca el dinero: lo cambia la rampa. En testnet la rampa es simulada (docs/simulaciones.md).
+/// WorkVille no toca el dinero: lo cambia la rampa. En testnet la rampa es simulada (docs/simulaciones.md).
 model Rampa {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuario_id     String   @db.Uuid

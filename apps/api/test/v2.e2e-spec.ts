@@ -1,4 +1,4 @@
-// Pruebas de punta a punta de Cryptoville v2 contra Supabase local (`npm run setup` antes).
+// Pruebas de punta a punta de WorkVille v2 contra Supabase local (`npm run setup` antes).
 // Igual que api.e2e-spec.ts: crean wallets nuevas en cada corrida y las borran al terminar.
 process.env.LOG_LEVEL = 'silent';
 import './sin-servicios';

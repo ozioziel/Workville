@@ -1,4 +1,4 @@
-// Cryptoville v2: «pagar con el QR del banco» y «pasar a mi banco» con la rampa SIMULADA (solo testnet).
+// WorkVille v2: «pagar con el QR del banco» y «pasar a mi banco» con la rampa SIMULADA (solo testnet).
 // Sin red: el pago simulado del banco deja un hash de mentira (en la app de verdad, emite USDC de prueba).
 import { Keypair } from '@stellar/stellar-sdk';
 import { clienteCon, con, usarApp } from './ayudas';
@@ -27,7 +27,7 @@ describe('rampa simulada', () => {
     await t.http().post('/api/rampas/entradas').set(con(s)).send({ monto_usdc: '10', direccion: Keypair.random().publicKey() }).expect(403);
     const r = await t.http().post('/api/rampas/entradas').set(con(s)).send({ monto_usdc: '10', direccion: s.par.publicKey() }).expect(201);
     expect(r.body).toMatchObject({ estado: 'esperando_pago', sentido: 'entrada', proveedor: 'simulada' });
-    expect(r.body.qr_payload).toMatch(/^SIMULADO-CRYPTOVILLE\|/);
+    expect(r.body.qr_payload).toMatch(/^SIMULADO-WORKVILLE\|/);
 
     // Otra persona no puede «pagar» la recarga ajena ni verla.
     const otra = await t.entrar();

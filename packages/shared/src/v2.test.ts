@@ -1,4 +1,4 @@
-// Pruebas de Cryptoville v2 en el paquete compartido: reglas, documentos legales, pagos y fases.
+// Pruebas de WorkVille v2 en el paquete compartido: reglas, documentos legales, pagos y fases.
 import { describe, expect, it } from 'vitest';
 import {
   ACCIONES_FASE,
@@ -167,7 +167,7 @@ describe('rampa simulada', () => {
     const salida = cotizarRampaSimulada('salida', '10');
     expect(salida.monto_local).toBe('68.90');
     expect(() => cotizarRampaSimulada('entrada', '0')).toThrow();
-    expect(qrRampaSimulada('CV-ABC123', '70.30')).toMatch(/^SIMULADO-CRYPTOVILLE\|/);
+    expect(qrRampaSimulada('CV-ABC123', '70.30')).toMatch(/^SIMULADO-WORKVILLE\|/);
   });
 });
 

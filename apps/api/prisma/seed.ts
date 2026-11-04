@@ -1,4 +1,4 @@
-// Datos de ejemplo de Cryptoville: 5 usuarios (uno es el árbitro) con local, servicios,
+// Datos de ejemplo de WorkVille: 5 usuarios (uno es el árbitro) con local, servicios,
 // pedidos en distintos estados, mensajes, una disputa resuelta y reseñas.
 // Cada usuario tiene su persona y su casa personalizadas, en su villa y con su categoría.
 // También hay «Se busca» abiertos (lo que la gente necesita), algunos con propuestas.
@@ -61,14 +61,14 @@ interface Perfil {
 // Lotes numerados dentro de cada villa (1, 2, 3…).
 const PERFILES: Record<string, Perfil> = {
   arbitro: {
-    bio: 'Equipo de Cryptoville. Resolvemos disputas y te ayudamos a usar Stellar Lab.',
+    bio: 'Equipo de WorkVille. Resolvemos disputas y te ayudamos a usar Stellar Lab.',
     avatar: 84,
     apariencia: {
       piel: 'piel-3', peinado: 'lateral', colorPelo: 'negro', barba: 'ninguna', arriba: 'camisa', colorArriba: 'marino',
       abajo: 'pantalon', colorAbajo: 'carbon', zapatos: 'zapatos-negros', lentes: 'redondos', gorro: 'ninguno', colorGorro: 'gris', objeto: 'libro',
     },
     local: {
-      nombre: 'Oficina Cryptoville', barrio: 'academy', lote: 2, categoria: 'mentorias', color: '#3d85c6', descripcion: 'Ayuda para empezar en el pueblo',
+      nombre: 'Oficina WorkVille', barrio: 'academy', lote: 2, categoria: 'mentorias', color: '#3d85c6', descripcion: 'Ayuda para empezar en el pueblo',
       apariencia: {
         techo: 'buhardilla', colorTecho: 'pizarra', pared: 'piedra', colorPared: 'marfil', puerta: 'doble', ventana: 'dos', toldo: 'rayas',
         letrero: 'placa', frente: 'plantas', piso: 'alfombra', paredInterior: 'verde', muebles: 'biblioteca', decoracion: 'diplomas',

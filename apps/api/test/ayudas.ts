@@ -1,4 +1,4 @@
-// Ayudas para las pruebas de punta a punta de Cryptoville v2 (contra Supabase local: `npm run setup` antes).
+// Ayudas para las pruebas de punta a punta de WorkVille v2 (contra Supabase local: `npm run setup` antes).
 // Cada archivo de pruebas llama a `usarApp()`: levanta la API, y al terminar borra las cuentas que creó.
 process.env.LOG_LEVEL = 'silent';
 import './sin-servicios';

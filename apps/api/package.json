@@ -2,7 +2,7 @@
   "name": "@cryptoville/api",
   "version": "0.1.0",
   "private": true,
-  "description": "API de Cryptoville (NestJS + Prisma + Supabase)",
+  "description": "API de WorkVille (NestJS + Prisma + Supabase)",
   "scripts": {
     "build": "prisma generate && nest build",
     "dev": "prisma generate && nest start --watch",

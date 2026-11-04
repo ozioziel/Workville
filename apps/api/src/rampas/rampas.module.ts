@@ -81,7 +81,7 @@ class SalidaDto {
 /**
  * Rampas: bolivianos → USDC («pagar con el QR del banco») y USDC → cuenta del banco («pasar a mi banco»).
  *
- * Cryptoville no recibe ni guarda dinero. En mainnet el cambio lo hace Pollar (con su SDK, desde el navegador
+ * WorkVille no recibe ni guarda dinero. En mainnet el cambio lo hace Pollar (con su SDK, desde el navegador
  * y con la sesión de la persona). En testnet la rampa es SIMULADA: el «QR» es de mentira y, al tocar
  * «Simular el pago desde el banco», la API emite USDC de prueba con la llave del emisor del token de prueba.
  * Lo simulado y lo que falta revisar está en docs/simulaciones.md.

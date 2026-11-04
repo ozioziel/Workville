@@ -40,7 +40,7 @@ export class SesionGuard implements CanActivate {
     if (error || !data.user) throw new UnauthorizedException('La sesión no es válida o venció');
 
     const usuario = await this.prisma.usuario.findUnique({ where: { id: data.user.id } });
-    if (!usuario) throw new UnauthorizedException('Tu cuenta no existe en Cryptoville');
+    if (!usuario) throw new UnauthorizedException('Tu cuenta no existe en WorkVille');
 
     const permitirSuspendido = this.reflector.getAllAndOverride<boolean>(PERMITIR_SUSPENDIDO, [ctx.getHandler(), ctx.getClass()]);
     if (usuario.suspendido && !permitirSuspendido) {

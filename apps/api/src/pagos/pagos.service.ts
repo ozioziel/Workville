@@ -80,7 +80,7 @@ export interface NuevaPrueba {
 }
 
 /**
- * Pagos de Cryptoville v2: métodos de pago, plan de fases, pago directo, pruebas y el contrato v2.
+ * Pagos de WorkVille v2: métodos de pago, plan de fases, pago directo, pruebas y el contrato v2.
  * - El contrato es la fuente de verdad del dinero: después de cada transacción la API lee el pedido
  *   en el contrato (`pedido(id)`) y deja las fases de la base igual que en la red.
  * - Si el contrato v2 no está configurado (ESCROW_V2_CONTRACT_ID), solo existe el pago con garantía del v1.
@@ -315,7 +315,7 @@ export class PagosService {
     let datos: Prisma.PruebaUncheckedCreateInput;
     const base = { pedido_id: pedido.id, fase: d.fase, autor_id: yo.id, para, entrega, tipo: d.tipo, titulo: d.titulo.trim() };
     if (d.tipo === 'archivo') {
-      if (!d.ruta || !d.ruta.startsWith(`pedidos/${pedido.id}/${d.fase}/${yo.id}/`)) throw new BadRequestException('El archivo tiene que subirse desde Cryptoville');
+      if (!d.ruta || !d.ruta.startsWith(`pedidos/${pedido.id}/${d.fase}/${yo.id}/`)) throw new BadRequestException('El archivo tiene que subirse desde WorkVille');
       const { data, error } = await this.supabase.admin.storage.from('pruebas').download(d.ruta);
       if (error || !data) throw new BadRequestException('No encontramos el archivo subido');
       const bytes = Buffer.from(await data.arrayBuffer());

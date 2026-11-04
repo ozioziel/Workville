@@ -106,7 +106,7 @@ export class NotificacionesService {
       const url = this.enlace(destino);
       if (this.config.servicios.push && (preferencias?.por_push ?? true)) await this.push(usuarioId, texto, url);
       if (this.config.servicios.correo && preferencias?.por_correo && preferencias.correo_verificado && preferencias.correo) {
-        await this.correo(preferencias.correo, 'Tienes un aviso en Cryptoville', texto, url, 'Ver en Cryptoville');
+        await this.correo(preferencias.correo, 'Tienes un aviso en WorkVille', texto, url, 'Ver en WorkVille');
       }
     } catch (e) {
       this.log.warn(`No se pudo mandar un aviso: ${String((e as Error).message).slice(0, 160)}`);
@@ -121,7 +121,7 @@ export class NotificacionesService {
 
   private async push(usuarioId: string, texto: string, url: string): Promise<void> {
     const suscripciones = await this.prisma.suscripcionPush.findMany({ where: { usuario_id: usuarioId } });
-    const carga = JSON.stringify({ titulo: 'Cryptoville', texto, url });
+    const carga = JSON.stringify({ titulo: 'WorkVille', texto, url });
     for (const s of suscripciones) {
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, carga, { TTL: 24 * 3600 });
@@ -139,7 +139,7 @@ export class NotificacionesService {
     const cuerpo = `<div style="font-family:system-ui,sans-serif;color:#3b2a25;max-width:520px">
 <p style="font-size:16px">${html(texto)}</p>
 <p><a href="${html(url)}" style="display:inline-block;background:#e07a5f;color:#fff;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700">${html(boton)}</a></p>
-<p style="color:#7a6a5f;font-size:12px">Recibes este correo porque activaste los avisos en tu perfil de Cryptoville.</p>
+<p style="color:#7a6a5f;font-size:12px">Recibes este correo porque activaste los avisos en tu perfil de WorkVille.</p>
 </div>`;
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -201,8 +201,8 @@ export class NotificacionesController {
     if (cambio && correo && token) {
       enviado = await this.notificaciones.correo(
         correo,
-        'Confirma tu correo en Cryptoville',
-        'Para recibir los avisos de Cryptoville en este correo, confírmalo con este botón.',
+        'Confirma tu correo en WorkVille',
+        'Para recibir los avisos de WorkVille en este correo, confírmalo con este botón.',
         `${this.config.urlPublica}/?correo=${token}`,
         'Confirmar mi correo',
       );

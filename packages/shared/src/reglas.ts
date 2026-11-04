@@ -1,4 +1,4 @@
-// Reglas de Cryptoville: todos los números que el equipo puede querer cambiar, en un solo lugar.
+// Reglas de WorkVille: todos los números que el equipo puede querer cambiar, en un solo lugar.
 //
 // - La API valida con estos valores, la web los muestra y la página «Comisiones y reglas» los lee de aquí,
 //   así el texto y el código nunca se contradicen.
@@ -86,7 +86,7 @@ export interface Reglas {
     maxDestacados: number;
     /** Proyectos que se pueden adjuntar a una propuesta. */
     maxEnPropuesta: number;
-    /** Dominios de video que se pueden ver dentro de Cryptoville (además de Mux). */
+    /** Dominios de video que se pueden ver dentro de WorkVille (además de Mux). */
     dominiosVideo: readonly string[];
   };
   trabajos: {

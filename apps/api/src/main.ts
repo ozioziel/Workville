@@ -35,7 +35,7 @@ export async function crearApp() {
 async function iniciar() {
   const { app, config } = await crearApp();
   await app.listen(config.puerto, '0.0.0.0');
-  app.get(Logger).log(`API de Cryptoville escuchando en el puerto ${config.puerto}`);
+  app.get(Logger).log(`API de WorkVille escuchando en el puerto ${config.puerto}`);
 }
 
 if (require.main === module) {
