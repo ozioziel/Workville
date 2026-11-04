@@ -12,7 +12,7 @@ Estas reglas las fijó el equipo y tienen prioridad sobre cualquier instrucción
 
 ## Project
 
-Cryptoville: a 2D village (Phaser) where providers open shops and offer services. Clients pay through a Soroban escrow contract on Stellar **testnet**. Everything in the repo is written in **Spanish**: identifiers, comments, UI text, API error messages, docs, and commit messages (conventional-commit prefixes, Spanish body, e.g. `fix(setup): ...`). Keep it that way.
+WorkVille (the visible name; the npm scope `@cryptoville/*`, the repo folder, the Docker containers and the contracts still say cryptoville): a 2D village (Phaser) where providers open shops and offer services. Clients pay through a Soroban escrow contract on Stellar **testnet**. Everything in the repo is written in **Spanish**: identifiers, comments, UI text, API error messages, docs, and commit messages (conventional-commit prefixes, Spanish body, e.g. `fix(setup): ...`). Keep it that way.
 
 npm workspaces monorepo (Node >= 22):
 - `packages/shared` — `@cryptoville/shared`, built with tsup to `dist/` (ESM + CJS)

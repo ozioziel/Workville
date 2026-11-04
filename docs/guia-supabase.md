@@ -29,7 +29,7 @@ En las dos cadenas de conexión, reemplaza `[YOUR-PASSWORD]` por la contraseña 
 
 ## 3. Configurar el inicio de sesión
 
-Cryptoville no usa correo ni contraseña: la API verifica la firma de la wallet y crea la cuenta en Supabase Auth por su cuenta. Por eso:
+WorkVille no usa correo ni contraseña: la API verifica la firma de la wallet y crea la cuenta en Supabase Auth por su cuenta. Por eso:
 
 1. **Authentication → Sign In / Providers**:
    - **Email** debe estar **activado**, porque la API lo usa internamente;

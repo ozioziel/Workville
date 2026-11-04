@@ -1,4 +1,4 @@
-# Contratos de Cryptoville (Rust + Soroban)
+# Contratos de WorkVille (Rust + Soroban)
 
 Aquí está el contrato de **pago en garantía** (`escrow/`). Se compila en tu PC y se **despliega y usa solo desde [Stellar Lab](https://lab.stellar.org)**. Ni la app ni la API se conectan a la red de Stellar.
 

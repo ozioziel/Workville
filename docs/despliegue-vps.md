@@ -115,7 +115,7 @@ Si el servidor es de otra persona y ya tiene servicios en los puertos 80 y 443:
   ```
 
 - Ejecuta `bash deploy/deploy.sh` como siempre.
-  - Cryptoville levanta sus contenedores con nombres `cryptoville-*` y publica **solo** ese puerto.
+  - WorkVille levanta sus contenedores con nombres `cryptoville-*` y publica **solo** ese puerto.
   - Antes de levantar nada, revisa que el puerto no lo use otro programa; si está ocupado, se detiene sin tocar nada.
 - La app queda en `http://IP:PUERTO`, **sin HTTPS**: Let's Encrypt necesita los puertos 80 o 443 para dar el certificado.
 - Para tener HTTPS en un servidor compartido, el dueño puede agregar en su proxy (nginx, Caddy, Traefik) una ruta de `IP-con-guiones.sslip.io` hacia `localhost:PUERTO`.
@@ -146,9 +146,9 @@ El dueño agrega **una** ruta en su proxy, que ya tiene los puertos 80 y 443 y s
   }
   ```
 
-Cryptoville confía en la IP que manda ese proxy solo si viene de una red privada (Caddy: `trusted_proxies`; API: `trust proxy`), así cada persona conserva su IP y los límites por minuto no se comparten.
+WorkVille confía en la IP que manda ese proxy solo si viene de una red privada (Caddy: `trusted_proxies`; API: `trust proxy`), así cada persona conserva su IP y los límites por minuto no se comparten.
 
-Después, en el `.env` de Cryptoville (y `bash deploy/deploy.sh`):
+Después, en el `.env` de WorkVille (y `bash deploy/deploy.sh`):
 ```dotenv
 PUBLIC_HOST=144-22-43-169.sslip.io
 PUBLIC_URL=https://144-22-43-169.sslip.io

@@ -1,16 +1,16 @@
-# Cryptoville
+# WorkVille
 
 **Un pueblo digital donde las personas ofrecen sus servicios, los encuentran y se pagan de forma segura con Stellar.**
 
 ## De qué trata
 
-Cryptoville es una plataforma de servicios entre personas. En lugar de buscar en una lista interminable, recorres un pueblo en 2D donde cada proveedor tiene su propio local. Entras, ves qué ofrece, hablas con él y lo contratas ahí mismo.
+WorkVille es una plataforma de servicios entre personas. En lugar de buscar en una lista interminable, recorres un pueblo en 2D donde cada proveedor tiene su propio local. Entras, ves qué ofrece, hablas con él y lo contratas ahí mismo.
 
 El pueblo está dividido en **cuatro villas**, una por tipo de servicio. Cada una tiene su arquitectura, su estatua gigante y un edificio central donde se leen datos curiosos (la mayoría sobre Stellar).
 
 El pago se hace con Stellar y queda **en garantía en un contrato inteligente**. El contrato solo puede liberar el dinero al proveedor o devolverlo al cliente, así que nadie puede tomarlo por su cuenta, ni siquiera nosotros.
 
-Cuando el trabajo está hecho y el cliente confirma, el proveedor cobra al instante. Si el proveedor no entrega antes de la fecha límite, el cliente recupera su dinero. Si hay un desacuerdo, **el equipo de Cryptoville actúa como árbitro**: revisa el caso y resuelve a favor de quien tenga la razón.
+Cuando el trabajo está hecho y el cliente confirma, el proveedor cobra al instante. Si el proveedor no entrega antes de la fecha límite, el cliente recupera su dinero. Si hay un desacuerdo, **el equipo de WorkVille actúa como árbitro**: revisa el caso y resuelve a favor de quien tenga la razón.
 
 Además, cada usuario construye su **reputación** con reseñas verificadas, ligadas a pagos reales, para que sepas en quién confiar antes de contratar.
 
@@ -28,7 +28,7 @@ Las plataformas que resuelven esto cobran comisiones altas, retienen el dinero d
 - **Fechas límite automáticas:**
   - si el proveedor no entrega a tiempo, el cliente se reembolsa;
   - si el cliente no responde en el plazo de revisión, el proveedor cobra.
-- **Arbitraje del equipo de Cryptoville,** que únicamente puede resolver a favor de una de las partes, nunca quedarse con el dinero.
+- **Arbitraje del equipo de WorkVille,** que únicamente puede resolver a favor de una de las partes, nunca quedarse con el dinero.
 - **Reputación verificada:** reseñas que solo puede dejar quien pagó de verdad, con el pago comprobable en Stellar.
 - **Cobro inmediato** cuando el trabajo se confirma, sin esperar semanas.
 - **Comisiones bajas:** 1% en el pago directo, 3% con garantía o por etapas, y fracciones de centavo de la red Stellar.
@@ -89,7 +89,7 @@ El avance se ve como un camino de puntos, uno por fase, con el color de su estad
 | Todo salió bien | El cliente libera el pago | El dinero va al proveedor (menos el 3%) |
 | El proveedor no entregó a tiempo | El cliente se reembolsa al vencer la fecha límite | El dinero vuelve al cliente |
 | El cliente no responde | El proveedor cobra al vencer el plazo de revisión (3 días) | El dinero va al proveedor |
-| Hay un desacuerdo | Cualquiera abre una disputa y Cryptoville resuelve | El dinero va a quien tenga la razón |
+| Hay un desacuerdo | Cualquiera abre una disputa y WorkVille resuelve | El dinero va a quien tenga la razón |
 
 ## Confianza
 
@@ -121,7 +121,7 @@ El avance se ve como un camino de puntos, uno por fase, con el color de su estad
 6. Hablan por el chat del pedido y el proveedor entrega.
 7. Confirmas y el proveedor cobra.
 8. Dejas una reseña que suma a su reputación.
-9. Si algo sale mal, abres un reclamo y el equipo de Cryptoville decide.
+9. Si algo sale mal, abres un reclamo y el equipo de WorkVille decide.
 
 ## Por qué en Stellar
 
@@ -129,7 +129,7 @@ El avance se ve como un camino de puntos, uno por fase, con el color de su estad
 - Comisiones de fracciones de centavo y confirmación en segundos.
 - Pagos públicos y verificables por cualquiera.
 - Monedas estables como USDC, para que nadie cobre en algo que sube y baja de precio.
-- Un ecosistema enfocado en pagos y en Latinoamérica, que es justo el uso de Cryptoville.
+- Un ecosistema enfocado en pagos y en Latinoamérica, que es justo el uso de WorkVille.
 
 ## Estado actual
 
