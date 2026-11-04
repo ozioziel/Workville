@@ -1,4 +1,4 @@
-# Integración continua de Cryptoville: corre en cada push y pull request.
+# Integración continua de WorkVille: corre en cada push y pull request.
 # No despliega nada ni toca el VPS (eso será deploy.yml, más adelante).
 name: CI
 
@@ -18,6 +18,26 @@ permissions:
   contents: read
 
 jobs:
+  autoria:
+    # Los commits y PR son del equipo: ninguno puede atribuir autoría a una IA (ver CLAUDE.md).
+    name: Autoría de commits y PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Revisar los commits del PR
+        run: node scripts/revisar-autoria.mjs --rango "$BASE..$HEAD"
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+      - name: Revisar el título y la descripción del PR
+        run: node scripts/revisar-autoria.mjs --texto "$TITULO"$'\n'"$CUERPO"
+        env:
+          TITULO: ${{ github.event.pull_request.title }}
+          CUERPO: ${{ github.event.pull_request.body }}
+
   contratos:
     name: Contratos (Rust + Soroban)
     runs-on: ubuntu-latest
