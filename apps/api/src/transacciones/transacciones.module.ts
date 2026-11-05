@@ -29,12 +29,23 @@ import type { Parte, Usuario } from '../generated/prisma/client';
 import { OrdersService, type PedidoCompleto } from '../orders/orders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { arg, hashDe, transaccionDeXdr } from '../stellar/cadena';
-import { StellarService } from '../stellar/stellar.service';
+import { StellarService, type ParteConTrustline } from '../stellar/stellar.service';
 import { direccionesDe } from '../stellar/verificador.service';
 import { esWalletDe, walletParaCobrar } from '../wallets/wallets.module';
 
 /** Minutos que dura una transacción armada antes de tener que pedir otra. */
 const VIGENCIA_MIN = 10;
+
+/** Quién tiene que activar USDC (trustline) para cada pago, y qué hacer si le falta. */
+const TRUSTLINE = {
+  yo: (direccion: string): ParteConTrustline => ({ direccion, quien: 'Tu wallet', solucion: 'actívala desde tu saldo (arriba, «Activar USDC») y vuelve a intentar.' }),
+  proveedor: (direccion: string): ParteConTrustline => ({
+    direccion,
+    quien: 'La wallet de cobro del proveedor',
+    solucion: 'avísale que active USDC desde su saldo. Hasta entonces no podría recibir el pago.',
+  }),
+  plataforma: (direccion: string, quien: string): ParteConTrustline => ({ direccion, quien, solucion: 'avísanos: el equipo de WorkVille tiene que activarla.' }),
+};
 
 class PrepararPasoDto {
   /**
@@ -98,6 +109,18 @@ class EnviarDto {
   xdr_firmado: string;
 }
 
+class TrustlineDto {
+  /** Wallet de la cuenta que va a aceptar el USDC. */
+  @Matches(/^G[A-Z2-7]{55}$/, { message: 'La dirección debe empezar con G y tener 56 caracteres' })
+  direccion: string;
+}
+
+class EnviarTrustlineDto {
+  @IsString()
+  @Length(100, 5_000, { message: 'La transacción firmada no es válida' })
+  xdr_firmado: string;
+}
+
 interface DatosPasoPreparado {
   accion: AccionContrato;
   a_favor_de?: Parte;
@@ -145,6 +168,10 @@ export class TransaccionesService {
     }
 
     const args = await this.argumentos(accion, pedido, dto);
+    if (accion === 'crear_pedido') {
+      const proveedor = pedido.direccion_proveedor ?? (await walletParaCobrar(this.prisma, pedido.proveedor));
+      await this.stellar.exigirTrustlines([TRUSTLINE.yo(dto.direccion), TRUSTLINE.proveedor(proveedor)]);
+    }
     const { xdr: sinFirmar, hash } = await this.stellar.preparar(dto.direccion, this.config.stellar.contratoId, FUNCION_CONTRATO[accion], args);
     const datos: DatosPasoPreparado = { accion, a_favor_de: dto.a_favor_de, motivo: dto.motivo, decision: dto.decision };
     const preparada = await this.prisma.transaccionPreparada.create({
@@ -174,6 +201,7 @@ export class TransaccionesService {
     if (!cupo.necesita_pago) throw new ConflictException('Todavía puedes abrir un local sin pagar');
     const precio = reglasDe(red).locales.precioExtraUsdc;
     const args = [arg.direccion(direccion), arg.direccion(tesoreria), arg.i128(usdcAUnidades(precio))];
+    await this.stellar.exigirTrustlines([TRUSTLINE.yo(direccion), TRUSTLINE.plataforma(tesoreria, 'La tesorería de WorkVille')]);
     const { xdr: sinFirmar, hash } = await this.stellar.preparar(direccion, tokenId, 'transfer', args);
     const preparada = await this.prisma.transaccionPreparada.create({
       data: {
@@ -196,6 +224,7 @@ export class TransaccionesService {
     if (!(await esWalletDe(this.prisma, yo, direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta: súmala en tu perfil o conecta otra');
     const { destino, unidades } = await this.rampas.datosParaEnvio(yo, rampaId, direccion);
     const args = [arg.direccion(direccion), arg.direccion(destino), arg.i128(unidades)];
+    await this.stellar.exigirTrustlines([TRUSTLINE.yo(direccion), TRUSTLINE.plataforma(destino, 'La wallet de la rampa')]);
     const { xdr: sinFirmar, hash } = await this.stellar.preparar(direccion, tokenId, 'transfer', args);
     const preparada = await this.prisma.transaccionPreparada.create({
       data: {
@@ -228,6 +257,10 @@ export class TransaccionesService {
     }
     const datos: DatosPasoV2 = { funcion, fase: dto.fase, resultado: dto.resultado, motivo: dto.motivo, decision: dto.decision };
     const { contrato, args } = await this.pagos.argumentosV2(yo, pedido, rol, dto.direccion, datos);
+    if (funcion === 'crear_pedido' || funcion === 'pagar_directo') {
+      const proveedor = pedido.direccion_proveedor ?? (await walletParaCobrar(this.prisma, pedido.proveedor));
+      await this.stellar.exigirTrustlines([TRUSTLINE.yo(dto.direccion), TRUSTLINE.proveedor(proveedor)]);
+    }
     const { xdr: sinFirmar, hash } = await this.stellar.preparar(dto.direccion, contrato, funcion, args);
     const preparada = await this.prisma.transaccionPreparada.create({
       data: {
@@ -290,6 +323,22 @@ export class TransaccionesService {
   }
 
   /** Argumentos de cada función del contrato v1, en el orden de lib.rs. */
+  /** Activar USDC (abrir la trustline): la API la arma, la wallet de la persona la firma. */
+  async prepararTrustline(yo: Usuario, direccion: string) {
+    if (!(await esWalletDe(this.prisma, yo, direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta: súmala en tu perfil o conecta otra');
+    if (await this.stellar.tieneTrustline(direccion)) throw new ConflictException('Tu wallet ya acepta USDC');
+    const { xdr: sinFirmar, activo } = await this.stellar.prepararTrustline(direccion);
+    return { xdr: sinFirmar, red: this.config.stellar.red, passphrase: this.stellar.passphrase, activo };
+  }
+
+  /** Envía la activación firmada, solo si es exactamente eso y desde una wallet de la cuenta. */
+  async enviarTrustline(yo: Usuario, xdrFirmado: string) {
+    const direccion = await this.stellar.revisarTrustlineFirmada(xdrFirmado);
+    if (!(await esWalletDe(this.prisma, yo, direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta');
+    const confirmada = await this.stellar.enviar(xdrFirmado);
+    return { direccion, hash: confirmada.txHash };
+  }
+
   private async argumentos(accion: AccionContrato, pedido: PedidoCompleto, dto: PrepararPasoDto): Promise<xdr.ScVal[]> {
     const dir = direccionesDe(pedido);
     const id = arg.u64(String(pedido.numero));
@@ -343,6 +392,20 @@ export class TransaccionesController {
   @HttpCode(200)
   async preparar(@UsuarioActual() yo: Usuario, @Body() dto: PrepararPasoDto) {
     return this.transacciones.prepararPaso(yo, dto);
+  }
+
+  /** Arma la activación de USDC (trustline) de una wallet de la cuenta. */
+  @Post('trustline/preparar')
+  @HttpCode(200)
+  async prepararTrustline(@UsuarioActual() yo: Usuario, @Body() dto: TrustlineDto) {
+    return this.transacciones.prepararTrustline(yo, dto.direccion);
+  }
+
+  /** Envía la activación de USDC ya firmada por la wallet. */
+  @Post('trustline/enviar')
+  @HttpCode(200)
+  async enviarTrustline(@UsuarioActual() yo: Usuario, @Body() dto: EnviarTrustlineDto) {
+    return this.transacciones.enviarTrustline(yo, dto.xdr_firmado);
   }
 
   /** Recibe la transacción firmada, la envía a la red y registra el paso. */
