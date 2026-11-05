@@ -47,18 +47,18 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 **Qué sí es real:** la persona firma con su wallet y manda el USDC de prueba de verdad (en testnet) a la dirección del emisor del USDC de prueba, que hace de rampa. La API lo verifica en la red. De la cuenta del banco solo se guardan los **últimos 4 dígitos**.
 
 **Qué falta:**
-- Con Pollar, el retiro **no está programado**. Hay que usar `createOffRamp` y `completeWithdraw` del SDK, con los datos bancarios que pida el proveedor (`requiredFields` de la cotización) y su propio KYC.
+- Con Pollar, el retiro **no está programado**. Desde la 0.12 es una orden `OFFRAMP` (`getRampRoutes('OFFRAMP')`, `quoteRamp`, `createRampOrder`), con los datos bancarios que pida el proveedor (`rampQuoteFields` de la cotización, enviados como `payee`), la firma del tramo (`signRampLeg`) y su propio KYC.
 - Mientras tanto, en mainnet el panel «Pasar a mi banco» dice que todavía no está disponible.
 
 ## 3. Rampa real con Pollar
 
-`apps/web/src/features/rampas/pollar.ts` ya usa el SDK de Pollar: `getRampCountries`, `getRampsQuote`, `createOnRamp` y `getRampTransaction`. Se usa **solo en mainnet** (`servicios.rampa === 'pollar'`) y solo si la persona entró con Google o con el correo. **Nadie lo probó todavía.** Antes de usarlo:
+`apps/web/src/features/rampas/pollar.ts` ya usa el SDK de Pollar 0.12, donde una rampa es una orden: `getRampRoutes('ONRAMP')`, `quoteRamp`, `createRampOrder` y `getRampOrder`. Se usa **solo en mainnet** (`servicios.rampa === 'pollar'`) y solo si la persona entró con Google o con el correo. **Nadie lo probó todavía.** Antes de usarlo:
 
-1. **Confirmar con Pollar** que tiene rampa para **Bolivia (BOB)**. Con una sesión iniciada, `getRampCountries()` lo responde; sin sesión, la API de Pollar devuelve 401.
+1. **Confirmar con Pollar** que tiene rampa para **Bolivia (BOB)**. Con una sesión iniciada, `getRampRoutes('ONRAMP')` lo responde (una ruta `BO` con `rail: 'QR'` que entregue USDC en Stellar); sin sesión, la API de Pollar devuelve 401.
 2. **Confirmar que su forma de pago «QR» sirve con QR Simple** y qué bancos lo aceptan.
-3. **Revisar el monto que se manda.** El código cotiza **en bolivianos** (`amount` en la moneda local, con el tipo de cambio simulado como aproximación). Hay que confirmar si Pollar espera el monto en la moneda local o en USDC.
-4. **Firmas pendientes.** Si la respuesta trae `pendingSignature` (SEP-10 o `withdraw_payment`), el código **no la maneja todavía**: hay que firmarla con la wallet de Pollar y mandarla con `submitRampSignature`.
-5. **KYC de la rampa:** si responde `kycRequired`, la persona sigue el `kycUrl`. Hay que ver si se puede reusar el KYC de Didit para no pedirlo dos veces.
+3. **Revisar el monto que se manda.** El código cotiza **en bolivianos** (`amount.denomination: 'in'`, con el tipo de cambio simulado como aproximación). Con `'out'` se fijaría lo que llega en USDC.
+4. **Datos del pagador y firmas.** El código todavía no pide los datos de `rampQuoteFields` (van como `payee`) ni maneja un `pendingAction` de tipo `SIGNATURE` o `COSIGN_APPROVAL`: hace falta registrar un firmante con `registerRampSigningHandler` y firmar el tramo con `signRampLeg`.
+5. **KYC de la rampa:** si el `pendingAction` es `KYC`, la persona sigue su `url`. Hay que ver si se puede reusar el KYC de Didit para no pedirlo dos veces.
 6. **El token:** en testnet la rampa real entregaría USDC «de verdad» de testnet, **no** el USDC de prueba de WorkVille (`PAYMENT_TOKEN_ID`). Por eso en testnet solo existe la rampa simulada. En mainnet, `PAYMENT_TOKEN_ID` tiene que ser el USDC que entrega la rampa.
 
 Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/propuestas/pagos-con-qr-bolivia.md`, que es un archivo local fuera de git.
