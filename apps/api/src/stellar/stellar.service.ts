@@ -1,12 +1,24 @@
 import { BadRequestException, Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ERRORES_CONTRATO, PASSPHRASE } from '@cryptoville/shared';
-import { Account, Address, BASE_FEE, Contract, Keypair, TransactionBuilder, nativeToScVal, rpc, scValToNative, type Transaction, type xdr } from '@stellar/stellar-sdk';
+import { ERRORES_CONTRATO, PASSPHRASE, activoDeNombreSac, type ActivoClasico } from '@cryptoville/shared';
+import { Account, Address, Asset, BASE_FEE, Contract, Keypair, Operation, TransactionBuilder, nativeToScVal, rpc, scValToNative, xdr, type Transaction } from '@stellar/stellar-sdk';
 import { CONFIGURACION, type Configuracion } from '../config/configuracion';
-import { codigoErrorContrato, contratoOrigenDelError, hashDe, transaccionDeXdr } from './cadena';
+import { codigoErrorContrato, contratoOrigenDelError, cuentaSinTrustline, hashDe, transaccionDeXdr } from './cadena';
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export type TransaccionConfirmada = rpc.Api.GetSuccessfulTransactionResponse;
+
+/** Error del Stellar Asset Contract cuando la cuenta no tiene trustline del activo. */
+const SAC_SIN_TRUSTLINE = 13;
+
+/** Quién tiene que tener la trustline, para el mensaje de error. */
+export interface ParteConTrustline {
+  direccion: string;
+  /** «Tu wallet», «La wallet de cobro del proveedor»… */
+  quien: string;
+  /** Qué tiene que hacer esa persona (o a quién avisar). */
+  solucion: string;
+}
 
 /** Errores del contrato v2 que no existen en el v1 (los mismos números del v1 significan lo mismo). */
 const ERRORES_EXTRA: Record<number, string> = {
@@ -34,6 +46,8 @@ const ERRORES_EXTRA: Record<number, string> = {
 export class StellarService {
   private readonly log = new Logger('Stellar');
   private readonly servidor: rpc.Server;
+  /** Activo clásico del token de pago (null si no es un SAC). Se lee una vez de la red. */
+  private activo: Promise<ActivoClasico | null> | null = null;
 
   constructor(@Inject(CONFIGURACION) private readonly config: Configuracion) {
     this.servidor = new rpc.Server(config.stellar.rpcUrl, { allowHttp: config.stellar.rpcUrl.startsWith('http://') });
@@ -167,6 +181,85 @@ export class StellarService {
   }
 
   /**
+   * Activo clásico detrás del token de pago, leído de su name() («USDC:G…»). Null si el token no es un SAC
+   * (el «USDC de prueba» propio no usa trustlines). Si la red no responde, se vuelve a intentar la próxima vez.
+   */
+  activoDelToken(): Promise<ActivoClasico | null> {
+    const { tokenId } = this.config.stellar;
+    if (!tokenId) return Promise.resolve(null);
+    this.activo ??= this.leer(tokenId, 'name').then(activoDeNombreSac, (e: unknown) => {
+      this.activo = null;
+      throw e;
+    });
+    return this.activo;
+  }
+
+  /** ¿La cuenta puede recibir y mandar el token de pago? (siempre sí si el token no es un SAC o si es el emisor). */
+  async tieneTrustline(direccion: string): Promise<boolean> {
+    const activo = await this.activoDelToken();
+    if (!activo || direccion === activo.emisor) return true;
+    const clave = xdr.LedgerKey.trustline(
+      new xdr.LedgerKeyTrustLine({
+        accountId: Keypair.fromPublicKey(direccion).xdrAccountId(),
+        asset: new Asset(activo.codigo, activo.emisor).toTrustLineXDRObject(),
+      }),
+    );
+    try {
+      return (await this.servidor.getLedgerEntries(clave)).entries.length > 0;
+    } catch (e) {
+      throw this.sinRed(e);
+    }
+  }
+
+  /** Antes de armar un pago: cada parte que manda o recibe el token tiene que tener la trustline. */
+  async exigirTrustlines(partes: ParteConTrustline[]): Promise<void> {
+    const activo = await this.activoDelToken();
+    if (!activo) return;
+    for (const p of partes) {
+      if (!(await this.tieneTrustline(p.direccion))) {
+        throw new BadRequestException(`${p.quien} todavía no acepta ${activo.codigo} (le falta la trustline): ${p.solucion}`);
+      }
+    }
+  }
+
+  /** Arma (sin firmar) la operación que abre la trustline del token de pago en `direccion`. */
+  async prepararTrustline(direccion: string): Promise<{ xdr: string; activo: ActivoClasico }> {
+    const activo = await this.activoDelToken();
+    if (!activo) throw new BadRequestException('El token de pago de este servidor no necesita trustline');
+    const tx = new TransactionBuilder(await this.cuenta(direccion), { fee: BASE_FEE, networkPassphrase: this.passphrase })
+      .addOperation(Operation.changeTrust({ asset: new Asset(activo.codigo, activo.emisor) }))
+      .setTimeout(300)
+      .build();
+    return { xdr: tx.toXDR(), activo };
+  }
+
+  /**
+   * Revisa que una transacción firmada sea SOLO la apertura de la trustline del token de pago (sin límite y sin
+   * cerrarla) y devuelve la cuenta que la firma. Así `enviar` no se usa para mandar otra cosa a la red.
+   */
+  async revisarTrustlineFirmada(xdrFirmado: string): Promise<string> {
+    const activo = await this.activoDelToken();
+    if (!activo) throw new BadRequestException('El token de pago de este servidor no necesita trustline');
+    let tx: Transaction;
+    try {
+      tx = transaccionDeXdr(xdrFirmado, this.passphrase);
+    } catch {
+      throw new BadRequestException('La transacción firmada no se pudo leer');
+    }
+    const [op, ...otras] = tx.operations;
+    const esLaTrustline =
+      otras.length === 0 &&
+      op?.type === 'changeTrust' &&
+      !op.source &&
+      op.line instanceof Asset &&
+      op.line.getCode() === activo.codigo &&
+      op.line.getIssuer() === activo.emisor &&
+      op.limit === '922337203685.4775807';
+    if (!esLaTrustline) throw new BadRequestException('Esa transacción no es la activación de USDC que armó WorkVille');
+    return tx.source;
+  }
+
+  /**
    * Firma y envía con la llave de mantenimiento. SOLO para funciones del contrato v2 que cualquiera puede llamar
    * y que siempre mandan el dinero a quien corresponde (vencimientos y `extender`).
    */
@@ -191,6 +284,9 @@ export class StellarService {
     const { red, tokenId } = this.config.stellar;
     if (red !== 'testnet' || !this.config.rampaSimulada) throw new Error('La rampa simulada solo existe en testnet');
     if (!tokenId) throw new ServiceUnavailableException('Falta PAYMENT_TOKEN_ID');
+    if (await this.activoDelToken()) {
+      throw new ServiceUnavailableException('La rampa simulada no puede emitir el USDC de Circle: pide USDC de testnet en https://faucet.circle.com');
+    }
     const par = Keypair.fromSecret(llaveEmisor);
     const { xdr: sinFirmar } = await this.preparar(par.publicKey(), tokenId, 'mint', [new Address(destino).toScVal(), nativeToScVal(BigInt(unidades), { type: 'i128' })]);
     const tx = TransactionBuilder.fromXDR(sinFirmar, this.passphrase) as Transaction;
@@ -206,6 +302,13 @@ export class StellarService {
   private errorDeSimulacion(e: unknown): BadRequestException {
     const mensaje = String((e as Error)?.message ?? e);
     const codigo = codigoErrorContrato(mensaje);
+    // El SAC dice qué cuenta no tiene la trustline («trustline entry is missing for account G…»). Se busca por el texto:
+    // si el escrow llamó al token, el #13 del SAC no es el #13 del escrow.
+    const cuenta = cuentaSinTrustline(mensaje);
+    if (cuenta !== null || (codigo === SAC_SIN_TRUSTLINE && contratoOrigenDelError(mensaje) === this.config.stellar.tokenId)) {
+      const quien = cuenta ? `La wallet ${cuenta.slice(0, 5)}…${cuenta.slice(-5)}` : 'Una de las wallets del pago';
+      return new BadRequestException(`${quien} todavía no acepta USDC (le falta la trustline). Actívala desde el saldo y vuelve a intentar.`);
+    }
     if (codigo !== null && this.config.stellar.tokenId && contratoOrigenDelError(mensaje) === this.config.stellar.tokenId) {
       // Falló el token (casi siempre por saldo): sus números de error no son los del escrow.
       return new BadRequestException('Tu wallet no tiene USDC suficiente para este pago. Recarga y vuelve a intentar.');

@@ -1,4 +1,4 @@
-import { datosRed, reglasDe } from '@cryptoville/shared';
+import { USDC_CIRCLE, datosRed, reglasDe } from '@cryptoville/shared';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Configuracion } from './configuracion';
@@ -50,6 +50,7 @@ export function revisarConfiguracion(c: Configuracion, extra: { llavesDeEjemplo:
   exigir(!extra.llavesDeEjemplo, 'Hay llaves de ejemplo (.seed-keys.json): en mainnet no se usan, quita el archivo');
   exigir(Boolean(s.contratoId || s.contratoV2Id), 'Falta el contrato de escrow (ESCROW_V2_CONTRACT_ID y/o ESCROW_CONTRACT_ID)');
   exigir(Boolean(s.tokenId), 'Falta PAYMENT_TOKEN_ID (el contrato SAC del USDC real)');
+  exigir(!s.tokenId || s.tokenId === USDC_CIRCLE.mainnet.contrato, `PAYMENT_TOKEN_ID no es el USDC de Circle (${USDC_CIRCLE.mainnet.contrato})`);
   exigir(Boolean(s.arbitro), 'Falta ARBITRO_DIRECCION');
   exigir(Boolean(s.tesoreria), 'Falta TESORERIA_DIRECCION');
   exigir(!/prueba|test/i.test(s.asset ?? ''), 'PAYMENT_ASSET dice "de prueba": en mainnet es el USDC real');

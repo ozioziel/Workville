@@ -90,6 +90,15 @@ export function contratoOrigenDelError(mensaje: string): string | null {
   return origenes.length ? origenes[origenes.length - 1][1] : null;
 }
 
+/**
+ * Cuenta sin trustline según el error del Stellar Asset Contract («trustline entry is missing for account G…»).
+ * Devuelve '' si el error es de trustline pero no trae la cuenta, y null si no es un error de trustline.
+ */
+export function cuentaSinTrustline(mensaje: string): string | null {
+  if (!/trustline entry is missing for account/.test(mensaje)) return null;
+  return /trustline entry is missing for account[^G]*(G[A-Z2-7]{55})/.exec(mensaje)?.[1] ?? '';
+}
+
 /** Compara dos valores leídos de la red (bigint, string o número) sin perder precisión. */
 export function mismoValor(a: unknown, b: unknown): boolean {
   if (a === undefined || a === null || b === undefined || b === null) return false;

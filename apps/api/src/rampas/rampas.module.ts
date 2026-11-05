@@ -143,17 +143,22 @@ export class RampasService {
     return { proveedor: 'simulada' as const, ...cotizarRampaSimulada(sentido, monto) };
   }
 
-  /** Saldo de USDC de una wallet de la cuenta (null si no se pudo leer la red). */
-  async saldo(yo: Usuario, direccion?: string) {
+  /**
+   * Saldo de USDC de una wallet de la cuenta (null si no se pudo leer la red).
+   * `trustline` dice si la wallet ya acepta el USDC (false: hay que activarlo; null: no se pudo saber).
+   * Sin trustline el saldo es 0: el SAC del USDC de Circle no responde el saldo de una cuenta sin trustline.
+   */
+  async saldo(yo: Usuario, direccion?: string): Promise<{ direccion: string; saldo_usdc: string | null; trustline: boolean | null }> {
     const dir = direccion ?? yo.direccion;
     if (!(await esWalletDe(this.prisma, yo, dir))) throw new ForbiddenException('Esa wallet no es de tu cuenta');
     const tokenId = this.config.stellar.tokenId;
-    if (!tokenId || this.config.entorno === 'test') return { direccion: dir, saldo_usdc: null };
+    if (!tokenId || this.config.entorno === 'test') return { direccion: dir, saldo_usdc: null, trustline: null };
     try {
+      if (!(await this.stellar.tieneTrustline(dir))) return { direccion: dir, saldo_usdc: '0', trustline: false };
       const valor = await this.stellar.leer(tokenId, 'balance', [arg.direccion(dir)]);
-      return { direccion: dir, saldo_usdc: unidadesAUsdc(BigInt((valor as bigint | number | null) ?? 0)) };
+      return { direccion: dir, saldo_usdc: unidadesAUsdc(BigInt((valor as bigint | number | null) ?? 0)), trustline: true };
     } catch {
-      return { direccion: dir, saldo_usdc: null };
+      return { direccion: dir, saldo_usdc: null, trustline: null };
     }
   }
 

@@ -63,3 +63,20 @@ describe('rampa simulada', () => {
     expect(JSON.stringify(r.body)).not.toContain('1234567890');
   });
 });
+
+describe('activar USDC (trustline)', () => {
+  it('el saldo dice si la wallet acepta USDC (sin red: no se sabe)', async () => {
+    const s = await t.entrar();
+    const r = await t.http().get(`/api/rampas/saldo?direccion=${s.par.publicKey()}`).set(con(s)).expect(200);
+    expect(r.body).toEqual({ direccion: s.par.publicKey(), saldo_usdc: null, trustline: null });
+  });
+
+  it('solo se arma para una wallet de la cuenta, y sin red no se arma', async () => {
+    const s = await t.entrar();
+    await t.http().post('/api/transacciones/trustline/preparar').set(con(s)).send({ direccion: Keypair.random().publicKey() }).expect(403);
+    await t.http().post('/api/transacciones/trustline/preparar').set(con(s)).send({ direccion: 'no-es-una-wallet' }).expect(400);
+    await t.http().post('/api/transacciones/trustline/preparar').set(con(s)).send({ direccion: s.par.publicKey() }).expect(503);
+    await t.http().post('/api/transacciones/trustline/enviar').set(con(s)).send({ xdr_firmado: 'A'.repeat(200) }).expect(503);
+    await t.http().post('/api/transacciones/trustline/preparar').send({ direccion: s.par.publicKey() }).expect(401);
+  });
+});

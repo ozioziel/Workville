@@ -11,6 +11,7 @@ export * from './reglas.js';
 export * from './legal.js';
 export * from './pagos.js';
 export * from './stellar/contrato-v2.js';
+export * from './stellar/usdc.js';
 export * from './portafolio.js';
 export * from './rampas.js';
 export * from './trabajos.js';
