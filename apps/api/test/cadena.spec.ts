@@ -1,5 +1,5 @@
 // Pruebas unitarias sin red: lectura de transacciones, argumentos de los contratos y revisión de mainnet.
-import { PASSPHRASE } from '@cryptoville/shared';
+import { PASSPHRASE, USDC_CIRCLE } from '@cryptoville/shared';
 import { Account, BASE_FEE, Contract, Keypair, TransactionBuilder, scValToNative } from '@stellar/stellar-sdk';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -110,15 +110,15 @@ describe('configuración y revisión de mainnet', () => {
     expect(texto).toMatch(/KYC/);
   });
 
-  it('una configuración de mainnet completa pasa la revisión', () => {
+  const mainnetCompleta = (extra: NodeJS.ProcessEnv = {}) => {
     const g = () => Keypair.random().publicKey();
-    const c = leerConfiguracion({
+    return leerConfiguracion({
       ...ENV_BASE,
       NODE_ENV: 'production',
       STELLAR_NETWORK: 'mainnet',
       PUBLIC_HOST: 'cryptoville.app',
       ESCROW_V2_CONTRACT_ID: CONTRATO,
-      PAYMENT_TOKEN_ID: CONTRATO,
+      PAYMENT_TOKEN_ID: USDC_CIRCLE.mainnet.contrato,
       PAYMENT_ASSET: 'USDC',
       ARBITRO_DIRECCION: g(),
       TESORERIA_DIRECCION: g(),
@@ -128,8 +128,17 @@ describe('configuración y revisión de mainnet', () => {
       DIDIT_WORKFLOW_ID: 'w',
       DIDIT_WEBHOOK_SECRET: 's',
       KYC_HMAC_SECRET: 'h'.repeat(40),
+      ...extra,
     });
-    expect(revisarConfiguracion(c, { llavesDeEjemplo: false }).problemas).toEqual([]);
+  };
+
+  it('una configuración de mainnet completa pasa la revisión', () => {
+    expect(revisarConfiguracion(mainnetCompleta(), { llavesDeEjemplo: false }).problemas).toEqual([]);
+  });
+
+  it('en mainnet el token de pago tiene que ser el USDC de Circle', () => {
+    const { problemas } = revisarConfiguracion(mainnetCompleta({ PAYMENT_TOKEN_ID: CONTRATO }), { llavesDeEjemplo: false });
+    expect(problemas).toEqual([`PAYMENT_TOKEN_ID no es el USDC de Circle (${USDC_CIRCLE.mainnet.contrato})`]);
   });
 
   it('detecta llaves secretas en el archivo de ejemplo (y no en el archivo vacío de Docker)', () => {

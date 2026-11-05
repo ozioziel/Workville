@@ -326,6 +326,7 @@ export class TransaccionesService {
   /** Activar USDC (abrir la trustline): la API la arma, la wallet de la persona la firma. */
   async prepararTrustline(yo: Usuario, direccion: string) {
     if (!(await esWalletDe(this.prisma, yo, direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta: súmala en tu perfil o conecta otra');
+    if (!this.stellar.armaTransacciones) throw new ServiceUnavailableException('Activar USDC desde la app no está disponible en este servidor');
     if (await this.stellar.tieneTrustline(direccion)) throw new ConflictException('Tu wallet ya acepta USDC');
     const { xdr: sinFirmar, activo } = await this.stellar.prepararTrustline(direccion);
     return { xdr: sinFirmar, red: this.config.stellar.red, passphrase: this.stellar.passphrase, activo };
@@ -333,6 +334,7 @@ export class TransaccionesService {
 
   /** Envía la activación firmada, solo si es exactamente eso y desde una wallet de la cuenta. */
   async enviarTrustline(yo: Usuario, xdrFirmado: string) {
+    if (!this.stellar.armaTransacciones) throw new ServiceUnavailableException('Activar USDC desde la app no está disponible en este servidor');
     const direccion = await this.stellar.revisarTrustlineFirmada(xdrFirmado);
     if (!(await esWalletDe(this.prisma, yo, direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta');
     const confirmada = await this.stellar.enviar(xdrFirmado);
