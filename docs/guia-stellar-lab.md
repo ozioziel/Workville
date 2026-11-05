@@ -294,7 +294,7 @@ Sin `ESCROW_V2_CONTRACT_ID` la app solo ofrece el pago con garantía del v1. Sin
 
    ```bash
    gh release download <nombre-del-release> --pattern '*.wasm' --dir /tmp/contratos
-   gh attestation verify /tmp/contratos/<archivo>.wasm --repo ozioziel/Cryptoville \
+   gh attestation verify /tmp/contratos/<archivo>.wasm --repo ozioziel/Workville \
      --signer-repo stellar-expert/soroban-build-workflow
    ```
 
@@ -323,6 +323,47 @@ Sin `ESCROW_V2_CONTRACT_ID` la app solo ofrece el pago con garantía del v1. Sin
    Un contrato nuevo empieza **vacío**. Los pedidos v2 ya pagados se quedan en el contrato anterior: la app deja de verlos en la red (los botones de esos pedidos fallan con «el pedido no existe»). Antes de cambiar, revisa que no queden pedidos v2 pagados y sin terminar en la base. Los pedidos que todavía no se pagaron no importan: se crean en el contrato nuevo al pagar. Si prefieres conservar la misma dirección y sus pedidos, usa la actualización con aviso (sección 5) con el hash del `.wasm` del Release: queda verificado, pero tarda 7 días.
 5. **Comprobar** cada contrato con el CLI de Stellar: `stellar contract info build --id <C…> --network testnet` debe responder «✅ Attestation found» con el repo, el tag y el commit. Si el servicio de StellarExpert funciona, `https://stellar.expert/explorer/testnet/contract/<C…>` también muestra el repo.
 
+### 8. Cambiar al USDC de Circle (testnet)
+
+Desde que la rampa real entrega **USDC de Circle**, el token de pago en testnet es el SAC de ese USDC y ya no el «USDC de prueba» propio:
+
+| Dato | Valor en testnet |
+|---|---|
+| Activo | `USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` ([Circle](https://developers.circle.com/stablecoins/usdc-contract-addresses)) |
+| `PAYMENT_TOKEN_ID` (su SAC) | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
+| Dónde pedir USDC | <https://faucet.circle.com> (elige *Stellar* y *Testnet*) |
+
+Los datos están en `packages/shared/src/stellar/usdc.ts` (`USDC_CIRCLE`). Es un activo clásico, así que **cada cuenta que paga o cobra necesita una trustline de USDC**. La app la revisa antes de cada pago y ofrece «Activar USDC» en el saldo. Nadie puede emitirlo: la rampa simulada no funciona con este token y los datos de prueba lo sacan de una wallet «caja» llena desde el faucet.
+
+El token se fija en el constructor del escrow, así que hace falta **un contrato v2 nuevo** con el mismo `.wasm` del Release `contratos-1` (sección 7):
+
+1. Revisa que no queden pedidos v2 pagados y sin terminar, ni pedidos v1 por pagar: el contrato nuevo empieza vacío y el v1 sigue con el token viejo.
+2. Abre la trustline de USDC de la **tesorería** (recibe las comisiones y los locales extra):
+
+   ```bash
+   stellar tx new change-trust --source tesoreria --network testnet \
+     --line USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+   ```
+3. Sube el `.wasm` del Release (si ya lo subiste, reusa su hash) y despliega con los mismos valores del contrato actual, cambiando solo el token:
+
+   ```bash
+   stellar contract deploy --wasm-hash <hash del v2> --source admin --network testnet -- \
+     --admin G… --arbitro G… --token CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA --tesoreria G… \
+     --comision_bps 300 --comision_directo_bps 100 \
+     --plazo_revision_seg 259200 --plazo_disputa_seg 1209600 --tope_pedido 0
+   ```
+4. En el `.env` del VPS:
+
+   ```dotenv
+   ESCROW_V2_CONTRACT_ID=C…   # el nuevo
+   PAYMENT_TOKEN_ID=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
+   PAYMENT_ASSET=USDC
+   RAMPA_SIMULADA=no          # hasta que la rampa simulada use la wallet «caja»
+   ```
+
+   y vuelve a ejecutar `bash deploy/deploy.sh`.
+5. Comprueba el contrato nuevo con `stellar contract info build --id <C…> --network testnet` (sección 7, paso 5) y que `config()` devuelva el token de Circle.
+
 ### Errores nuevos del v2
 
 | Mensaje | Qué pasa |
@@ -330,6 +371,7 @@ Sin `ESCROW_V2_CONTRACT_ID` la app solo ofrece el pago con garantía del v1. Sin
 | `#11` Pausado | El contrato está en pausa: no se pueden crear pedidos nuevos |
 | `#12` TopeSuperado | El monto pasa del tope por pedido |
 | `#13` PlanInvalido | 0 fases o más de 5 |
+| `#13` del **token** (USDC de Circle) | Una de las wallets no tiene la trustline de USDC: la app dice cuál (es otro contrato, el SAC, con el mismo número) |
 | `#14` FaseNoExiste | Ese número de fase no está en el plan |
 | `#15` FaseAnteriorPendiente | Primero hay que cerrar las fases anteriores |
 | `#16` SinCambios | Ya se pidieron los 2 cambios de esa fase |
@@ -340,7 +382,7 @@ Sin `ESCROW_V2_CONTRACT_ID` la app solo ofrece el pago con garantía del v1. Sin
 
 ## Al pasar a mainnet
 
-- No uses el «USDC de prueba»: el escrow se despliega con el **contrato SAC del USDC real** en el argumento `token`. Su dirección se consulta en la documentación de Circle o de Stellar.
+- No uses el «USDC de prueba»: el escrow se despliega con el **contrato SAC del USDC real** en el argumento `token`: `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75` (SAC de `USDC:GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN`; compruébalo en la documentación de Circle). `npm run mainnet:revisar` lo exige.
 - Cambia `STELLAR_NETWORK=mainnet`.
 - Usa cuentas reales y una cuenta **multifirma** como admin.
 - Antes, haz una **auditoría** del contrato.
