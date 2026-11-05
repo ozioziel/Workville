@@ -25,10 +25,32 @@ export interface Rampa {
   creada_en: string;
 }
 
+export interface EstadoSaldo {
+  /** Null si no se pudo leer la red. */
+  saldo_usdc: string | null;
+  /** ¿La wallet ya acepta el USDC? false: hay que activarlo (trustline); null: no se pudo saber o no hace falta. */
+  trustline: boolean | null;
+}
+
+/** Saldo de USDC de una wallet de la cuenta y si ya lo acepta. */
+export function estadoSaldo(direccion: string): Promise<EstadoSaldo> {
+  return api<EstadoSaldo>(`/rampas/saldo?direccion=${encodeURIComponent(direccion)}`);
+}
+
 /** Saldo de USDC de una wallet de la cuenta (null si no se pudo leer la red). */
 export async function saldoUsdc(direccion: string): Promise<string | null> {
-  const r = await api<{ saldo_usdc: string | null }>(`/rampas/saldo?direccion=${encodeURIComponent(direccion)}`);
-  return r.saldo_usdc;
+  return (await estadoSaldo(direccion)).saldo_usdc;
+}
+
+/**
+ * Activa el USDC en una wallet (abre su trustline): WorkVille arma la operación, la wallet la firma
+ * y WorkVille la envía después de revisar que sea solo eso.
+ */
+export async function activarUsdc(direccion: string, firmar: (xdr: string, direccion: string) => Promise<string>): Promise<void> {
+  const { xdr } = await api<{ xdr: string }>('/transacciones/trustline/preparar', { cuerpo: { direccion } });
+  const firmada = await firmar(xdr, direccion);
+  await api('/transacciones/trustline/enviar', { cuerpo: { xdr_firmado: firmada } });
+  avisarCambioDeSaldo();
 }
 
 export function crearRecarga(montoUsdc: string, direccion: string, pedidoId?: string): Promise<Rampa> {

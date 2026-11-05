@@ -1,10 +1,11 @@
-import { RAMPA_SIMULADA, enlaceExplorador } from '@cryptoville/shared';
+import { FAUCET_USDC_TESTNET, RAMPA_SIMULADA, USDC_CIRCLE, enlaceExplorador } from '@cryptoville/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSesion } from '../../features/auth/sesion';
-import { escucharCambioDeSaldo, saldoUsdc } from '../../features/rampas/datos';
+import { escucharCambioDeSaldo, estadoSaldo } from '../../features/rampas/datos';
 import { obtenerConfig, servicios } from '../../lib/config';
 import { useEstado } from '../estado';
 import { Aviso } from '../components/basicos';
+import { ActivarUsdc } from './ActivarUsdc';
 import { Icono } from '../components/Iconos';
 import { RecargaConPollar, RecargaSimulada } from './PagarConQr';
 
@@ -28,6 +29,7 @@ export function SaldoArriba() {
   const { usuario } = useSesion();
   const { abrir, version, avisar } = useEstado();
   const [saldo, setSaldo] = useState<string | null | undefined>(undefined);
+  const [trustline, setTrustline] = useState<boolean | null>(null);
   const [menu, setMenu] = useState(false);
   const caja = useRef<HTMLDivElement>(null);
   const direccion = usuario?.direccion ?? null;
@@ -35,7 +37,13 @@ export function SaldoArriba() {
 
   const leer = useCallback(() => {
     if (!direccion) return;
-    saldoUsdc(direccion).then(setSaldo, () => setSaldo(null));
+    estadoSaldo(direccion).then(
+      (e) => {
+        setSaldo(e.saldo_usdc);
+        setTrustline(e.trustline);
+      },
+      () => setSaldo(null),
+    );
   }, [direccion]);
 
   useEffect(() => {
@@ -71,6 +79,9 @@ export function SaldoArriba() {
   if (!usuario || !direccion) return null;
   const texto = saldo === undefined ? '…' : saldo === null ? '—' : formatoSaldo(saldo);
   const corto = saldo === undefined ? '…' : saldo === null ? '—' : formatoCorto(saldo);
+  const config = obtenerConfig();
+  // En testnet con el USDC de Circle, el USDC de prueba se pide gratis en su faucet.
+  const conFaucet = config.red === 'testnet' && config.token_id === USDC_CIRCLE.testnet.contrato;
 
   const elegir = (accion: () => void) => {
     setMenu(false);
@@ -86,8 +97,9 @@ export function SaldoArriba() {
         aria-expanded={menu}
         onClick={() => setMenu((m) => !m)}
         title="Tu saldo en USDC"
-        aria-label={`Tu saldo: ${texto} USDC`}
+        aria-label={`Tu saldo: ${texto} USDC${trustline === false ? '. Falta activar USDC en tu wallet' : ''}`}
       >
+        {trustline === false && <Icono nombre="alerta" />}
         <strong className="saldo-largo">{texto}</strong>
         {corto !== texto && <strong className="saldo-corto">{corto}</strong>}
         <span className="saldo-unidad"> USDC</span>
@@ -96,8 +108,14 @@ export function SaldoArriba() {
         <div className="saldo-menu" role="menu">
           <p className="saldo-menu-titulo">
             Tienes <strong>{texto} USDC</strong>
-            {obtenerConfig().red === 'testnet' && <span className="tenue pequeno"> (de prueba)</span>}
+            {config.red === 'testnet' && <span className="tenue pequeno"> (de prueba)</span>}
           </p>
+          {trustline === false && <ActivarUsdc direccion={direccion} onActivado={leer} />}
+          {conFaucet && trustline !== false && (
+            <a role="menuitem" className="saldo-opcion" href={FAUCET_USDC_TESTNET} target="_blank" rel="noreferrer" onClick={() => setMenu(false)}>
+              <Icono nombre="enlace" /> Pedir USDC de prueba (faucet de Circle)
+            </a>
+          )}
           {rampa && (
             <>
               <button type="button" role="menuitem" className="saldo-opcion" onClick={() => elegir(() => abrir({ tipo: 'recargar' }))}>
@@ -126,7 +144,7 @@ export function SaldoArriba() {
           <a
             role="menuitem"
             className="saldo-opcion"
-            href={enlaceExplorador('account', direccion, obtenerConfig().red)}
+            href={enlaceExplorador('account', direccion, config.red)}
             target="_blank"
             rel="noreferrer"
             onClick={() => setMenu(false)}
