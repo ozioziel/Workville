@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { formatoUsdc, puedeHacer, siguienteEstado, type RolEnPedido } from '@cryptoville/shared';
-import { randomInt } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { AvisosService } from '../avisos/avisos.service';
 import { Prisma, type Pedido, type Usuario } from '../generated/prisma/client';
 import { KycService } from '../kyc/kyc.module';
@@ -155,7 +155,23 @@ export class OrdersService {
   }
 }
 
-/** Número del pedido en el contrato (u64): segundos Unix × 1000 + 3 cifras al azar. Cabe en 2^53. */
+/** 2^52: el bit fijo de todos los números de pedido nuevos. */
+const BIT_52 = 1n << 52n;
+
+/**
+ * Número del pedido = `id` del pedido en los contratos v1 y v2 (u64).
+ *
+ * 52 bits del generador criptográfico de Node (`randomBytes`) más el bit 2^52 fijo,
+ * así que siempre queda entre 2^52 y 2^53 - 1:
+ * - cabe en el u64 del contrato y en el `BIGINT` de PostgreSQL (con signo, hasta 2^63 - 1);
+ * - es un entero seguro de JavaScript: `serializar()` lo pasa a `number` y Supabase lo
+ *   entrega a la web como número JSON sin perder cifras (más de 2^53 sí se perdería);
+ * - siempre tiene 16 cifras y no choca con los números viejos (segundos Unix × 1000 + 3 cifras)
+ *   ni con los de ejemplo del seed.
+ * No usa la hora, así que no se puede adivinar. Si aun así choca con uno que ya existe, el índice
+ * único de `pedidos.numero` lo rechaza (P2002) y quien crea el pedido reintenta con otro.
+ */
 export function nuevoNumero(): bigint {
-  return BigInt(Math.floor(Date.now() / 1000)) * 1000n + BigInt(randomInt(1000));
+  const azar = randomBytes(8).readBigUInt64BE(0) & (BIT_52 - 1n);
+  return BIT_52 | azar;
 }
