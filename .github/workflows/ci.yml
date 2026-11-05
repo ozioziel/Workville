@@ -50,9 +50,10 @@ jobs:
         with:
           workspaces: contracts
       # soroban-sdk 28 solo se deja compilar a .wasm con `stellar contract build`.
+      # La descarga se reintenta: GitHub a veces responde 504 con los Releases.
       - name: Instalar Stellar CLI
         run: |
-          curl -sSfL -o stellar-cli.tgz https://github.com/stellar/stellar-cli/releases/download/v28.0.0/stellar-cli-28.0.0-x86_64-unknown-linux-gnu.tar.gz
+          curl -sSfL --retry 5 --retry-delay 5 --retry-all-errors -o stellar-cli.tgz https://github.com/stellar/stellar-cli/releases/download/v28.0.0/stellar-cli-28.0.0-x86_64-unknown-linux-gnu.tar.gz
           tar -xzf stellar-cli.tgz -C /usr/local/bin stellar
           rm stellar-cli.tgz
           stellar --version
