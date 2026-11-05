@@ -11,7 +11,10 @@
 //   (pide la transacción a la API, la firma con la llave de prueba y la envía), igual que la app.
 // - No borra nada más y no toca a los usuarios de ejemplo del seed (Ana, Luis, Sofía, Diego).
 // - Qué probar con cada cuenta: docs/propuestas/guia-de-pruebas.md.
-import { Address, BASE_FEE, Contract, Keypair, Networks, TransactionBuilder, nativeToScVal, rpc } from '@stellar/stellar-sdk';
+// - Con el USDC de Circle (PAYMENT_TOKEN_ID = su SAC) nadie puede emitir: el script abre las trustlines y reparte
+//   el USDC desde la wallet «caja» de .prueba-keys.json, que se llena gratis en https://faucet.circle.com.
+//   Los precios de los servicios son 10 veces más bajos para que alcance con un pedido al faucet.
+import { Account, Address, Asset, BASE_FEE, Contract, Keypair, Networks, Operation, TransactionBuilder, nativeToScVal, rpc, scValToNative } from '@stellar/stellar-sdk';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { createHash } from 'node:crypto';
@@ -20,7 +23,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
 import pg from 'pg';
-import { DOCUMENTOS_LEGALES, usdcAUnidades } from '../packages/shared/dist/index.js';
+import { DOCUMENTOS_LEGALES, FAUCET_USDC_TESTNET, activoDeNombreSac, unidadesAUsdc, usdcAUnidades } from '../packages/shared/dist/index.js';
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(raiz, '.env'), quiet: true });
@@ -49,8 +52,9 @@ const CUENTAS = [
   'prueba-reportado',
 ];
 const RELLENO_MAX = 7;
-// Llaves sin cuenta en la app: tesorería del contrato v2, llave de mantenimiento y la segunda wallet de prueba-wallets.
-const EXTRA = ['tesoreria', 'mantenimiento', 'prueba-wallets-2'];
+// Llaves sin cuenta en la app: tesorería del contrato v2, llave de mantenimiento, la segunda wallet de prueba-wallets
+// y la «caja» que reparte el USDC de Circle.
+const EXTRA = ['tesoreria', 'mantenimiento', 'prueba-wallets-2', 'caja'];
 
 // ---------------------------------------------------------------
 // Llaves
@@ -160,6 +164,65 @@ async function emitirUsdc(token, emisor, destino, usdc) {
   throw new Error('la red no confirmó el mint a tiempo');
 }
 
+/** Firma con una llave de prueba y envía una transacción ya armada (con reintentos de lectura). */
+async function enviarFirmada(servidor, tx, par, que) {
+  tx.sign(par);
+  const envio = await servidor.sendTransaction(tx);
+  if (envio.status === 'ERROR') throw new Error(`${que}: rechazada`);
+  for (let i = 0; i < 30; i++) {
+    const r = await servidor.getTransaction(envio.hash);
+    if (r.status === 'SUCCESS') return;
+    if (r.status === 'FAILED') throw new Error(`${que}: falló`);
+    await espera(1000);
+  }
+  throw new Error(`${que}: la red no la confirmó a tiempo`);
+}
+
+/** Activo clásico del token (USDC de Circle), o null si es el USDC de prueba propio. */
+async function activoDelToken(token, fuente) {
+  const servidor = new rpc.Server(RPC, { allowHttp: RPC.startsWith('http://') });
+  const tx = new TransactionBuilder(new Account(fuente, '0'), { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+    .addOperation(new Contract(token).call('name'))
+    .setTimeout(60)
+    .build();
+  const sim = await servidor.simulateTransaction(tx);
+  if (rpc.Api.isSimulationError(sim)) throw new Error(`No se pudo leer el token ${token.slice(0, 6)}…: ${sim.error.slice(0, 120)}`);
+  return activoDeNombreSac(scValToNative(sim.result.retval));
+}
+
+/** Abre la trustline del activo en una cuenta de prueba (si ya la tiene, no hace nada). */
+async function abrirTrustline(activo, llave) {
+  const servidor = new rpc.Server(RPC, { allowHttp: RPC.startsWith('http://') });
+  if (await saldoClasico(activo, llave.publica) !== null) return;
+  const tx = new TransactionBuilder(await servidor.getAccount(llave.publica), { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+    .addOperation(Operation.changeTrust({ asset: new Asset(activo.codigo, activo.emisor) }))
+    .setTimeout(120)
+    .build();
+  await enviarFirmada(servidor, tx, Keypair.fromSecret(llave.secreta), `trustline de ${llave.publica.slice(0, 6)}…`);
+}
+
+/** Saldo del activo en la cuenta (USDC), o null si no tiene trustline. */
+async function saldoClasico(activo, direccion) {
+  const servidor = new rpc.Server(RPC, { allowHttp: RPC.startsWith('http://') });
+  try {
+    const linea = await servidor.getTrustline(direccion, new Asset(activo.codigo, activo.emisor));
+    return unidadesAUsdc(linea.balance);
+  } catch (e) {
+    if (/not found/i.test(String(e?.message ?? e))) return null;
+    throw e;
+  }
+}
+
+/** Manda USDC desde la caja (pago clásico: la cuenta destino ya tiene la trustline). */
+async function pagarDesdeCaja(activo, caja, destino, usdc) {
+  const servidor = new rpc.Server(RPC, { allowHttp: RPC.startsWith('http://') });
+  const tx = new TransactionBuilder(await servidor.getAccount(caja.publica), { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+    .addOperation(Operation.payment({ destination: destino, asset: new Asset(activo.codigo, activo.emisor), amount: usdc }))
+    .setTimeout(120)
+    .build();
+  await enviarFirmada(servidor, tx, Keypair.fromSecret(caja.secreta), `${usdc} USDC a ${destino.slice(0, 6)}…`);
+}
+
 /** PNG de un color con una franja (sin librerías), para las fotos del portafolio. */
 function png(ancho, alto, [r, g, b], [r2, g2, b2]) {
   const filas = [];
@@ -218,7 +281,7 @@ Listo: ${path.relative(raiz, ARCHIVO_LLAVES)} (solo testnet, no se sube a git).
      arbitro    = ${ll.cuentas['prueba-arbitro'].publica}
      tesoreria  = ${ll.extra.tesoreria.publica}
      admin      = tu cuenta (por ejemplo, la del Equipo WorkVille de .seed-keys.json)
-     token      = tu PAYMENT_TOKEN_ID
+     token      = tu PAYMENT_TOKEN_ID (el USDC de Circle: CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA)
 
 2) Pon en tu .env:
      ESCROW_V2_CONTRACT_ID=C…   (el id que te dio el Lab)
@@ -301,9 +364,31 @@ async function crear() {
     console.warn('  pero para RESOLVER una disputa hay que entrar con la wallet del árbitro y darle el rol (npm run datos:prueba -- --arbitro).');
   }
 
-  const semilla = path.join(raiz, '.seed-keys.json');
-  if (!existsSync(semilla)) throw new Error('No existe .seed-keys.json (npm run setup): hace falta el emisor del USDC de prueba.');
-  const emisor = JSON.parse(readFileSync(semilla, 'utf8')).emisor_usdc;
+  // USDC de Circle: no se emite, se reparte desde la caja. USDC de prueba propio: lo emite el emisor del seed.
+  const activo = await activoDelToken(config.token_id, config.arbitro ?? ll.cuentas['prueba-arbitro'].publica);
+  const conDinero = activo
+    ? { 'prueba-cliente': '12', 'prueba-locales': '5', 'prueba-sebusca': '2', 'prueba-proveedor': '1' }
+    : { 'prueba-cliente': '500', 'prueba-sebusca': '100', 'prueba-locales': '20', 'prueba-proveedor': '10' };
+  /** Precios de los datos de prueba: 10 veces más bajos con el USDC de Circle (el faucet da poco). */
+  const precio = (usdc) => (activo ? String(Number(usdc) / 10) : usdc);
+  let emisor = null;
+  if (activo) {
+    const caja = ll.extra.caja;
+    const falta = Object.values(conDinero).reduce((t, m) => t + Number(m), 0);
+    await friendbot(caja.publica);
+    await abrirTrustline(activo, caja);
+    const enCaja = Number((await saldoClasico(activo, caja.publica)) ?? 0);
+    if (enCaja < falta) {
+      throw new Error(
+        `La caja tiene ${enCaja} USDC y hacen falta ${falta}. Pide USDC de testnet en ${FAUCET_USDC_TESTNET} ` +
+          `(red Stellar, Testnet) para esta dirección y vuelve a correr el script:\n  ${caja.publica}`,
+      );
+    }
+  } else {
+    const semilla = path.join(raiz, '.seed-keys.json');
+    if (!existsSync(semilla)) throw new Error('No existe .seed-keys.json (npm run setup): hace falta el emisor del USDC de prueba.');
+    emisor = JSON.parse(readFileSync(semilla, 'utf8')).emisor_usdc;
+  }
 
   const db = new pg.Client({ connectionString: process.env.DIRECT_URL });
   await db.connect();
@@ -316,15 +401,18 @@ async function crear() {
   const paso = (texto) => console.log(`\n▸ ${texto}`);
   const resumen = { pedidos: {}, cuentas: {} };
 
-  paso('XLM de prueba (Friendbot) y USDC de prueba');
-  const conDinero = { 'prueba-cliente': '500', 'prueba-sebusca': '100', 'prueba-locales': '20', 'prueba-proveedor': '10' };
-  for (const c of ['prueba-cliente', 'prueba-proveedor', 'prueba-arbitro', 'prueba-sebusca', 'prueba-locales', 'prueba-wallets']) {
-    await friendbot(ll.cuentas[c].publica);
-  }
+  paso(activo ? 'XLM de prueba (Friendbot), trustlines y USDC de Circle desde la caja' : 'XLM de prueba (Friendbot) y USDC de prueba');
+  const conXlm = ['prueba-cliente', 'prueba-proveedor', 'prueba-arbitro', 'prueba-sebusca', 'prueba-locales', 'prueba-wallets'];
+  for (const c of conXlm) await friendbot(ll.cuentas[c].publica);
   await friendbot(ll.extra.tesoreria.publica);
+  if (activo) {
+    // Quien paga o cobra (y la tesorería, que recibe las comisiones) necesita la trustline del USDC.
+    for (const llave of [...conXlm.map((c) => ll.cuentas[c]), ll.extra.tesoreria]) await abrirTrustline(activo, llave);
+  }
   for (const [c, monto] of Object.entries(conDinero)) {
-    await emitirUsdc(config.token_id, emisor, ll.cuentas[c].publica, monto);
-    console.log(`  ${c}: ${monto} USDC de prueba`);
+    if (activo) await pagarDesdeCaja(activo, ll.extra.caja, ll.cuentas[c].publica, monto);
+    else await emitirUsdc(config.token_id, emisor, ll.cuentas[c].publica, monto);
+    console.log(`  ${c}: ${monto} USDC${activo ? '' : ' de prueba'}`);
   }
 
   paso('Cuentas (inicio de sesión con la firma de cada wallet)');
@@ -350,10 +438,10 @@ async function crear() {
   const estudio = await api('/locales', { token: P.token, cuerpo: { nombre: 'Estudio prueba-proveedor', barrio: 'creativo', descripcion: 'Segundo local de prueba (para las propuestas).' } });
   const servicio = async (local, titulo, precio, dias) =>
     (await api('/servicios', { token: P.token, cuerpo: { local_id: local, titulo, descripcion: `${titulo}: servicio de prueba para la guía de pruebas.`, precio_usdc: precio, dias_entrega: dias } })).id;
-  const svGarantia = await servicio(taller.id, 'Página web (prueba garantía)', '10', 5);
-  const svEtapas = await servicio(taller.id, 'Tienda en línea (prueba etapas)', '30', 14);
-  const svDirecto = await servicio(taller.id, 'Arreglo rápido (prueba directo)', '5', 2);
-  await servicio(estudio.id, 'Logo (prueba)', '8', 4);
+  const svGarantia = await servicio(taller.id, 'Página web (prueba garantía)', precio('10'), 5);
+  const svEtapas = await servicio(taller.id, 'Tienda en línea (prueba etapas)', precio('30'), 14);
+  const svDirecto = await servicio(taller.id, 'Arreglo rápido (prueba directo)', precio('5'), 2);
+  await servicio(estudio.id, 'Logo (prueba)', precio('8'), 4);
 
   const L = s['prueba-locales'];
   await api('/mi-local', { token: L.token, metodo: 'PUT', cuerpo: { nombre: 'Local 1 de prueba-locales', barrio: 'audiovisual' } });
@@ -477,15 +565,15 @@ async function crear() {
       descripcion: 'Necesito una página de una sección con formulario de contacto (dato de prueba).',
       barrio: 'tech',
       categoria: 'desarrollo-web',
-      presupuesto_usdc: '40',
+      presupuesto_usdc: precio('40'),
       fecha_limite: enDias(20),
     },
   });
   await api(`/busquedas/${busqueda.id}/propuestas`, {
     token: P.token,
-    cuerpo: { monto_usdc: '36', dias_entrega: 10, mensaje: 'Te la hago en dos fases, mira mis proyectos parecidos (prueba).', local_id: estudio.id, fases: plan(2), proyectos: [proyP1, proyP2] },
+    cuerpo: { monto_usdc: precio('36'), dias_entrega: 10, mensaje: 'Te la hago en dos fases, mira mis proyectos parecidos (prueba).', local_id: estudio.id, fases: plan(2), proyectos: [proyP1, proyP2] },
   });
-  await api(`/busquedas/${busqueda.id}/propuestas`, { token: F.token, cuerpo: { monto_usdc: '30', dias_entrega: 6, mensaje: 'Te la entrego de una vez, sin fases (prueba).' } });
+  await api(`/busquedas/${busqueda.id}/propuestas`, { token: F.token, cuerpo: { monto_usdc: precio('30'), dias_entrega: 6, mensaje: 'Te la entrego de una vez, sin fases (prueba).' } });
   resumen.busqueda = busqueda.id;
   console.log('  ✓ una propuesta con plan y proyectos (desde el 2º local) y otra sin plan');
 

@@ -11,7 +11,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 | 5 | Entrar con el correo (Pollar) | 🟠 **Real, sin probar**: el panel de Pollar lo marca «próximamente» | los mismos archivos |
 | 6 | KYC (Didit) | 🟡 **Sandbox**: verifica sin cobrar y sin validez real | `apps/api/src/kyc/` |
 | 7 | Cuentas «prueba-…» verificadas | 🟡 **De mentira**, solo en la base local | `scripts/datos-de-prueba.mjs` |
-| 8 | USDC de prueba | 🟡 **Token propio** de testnet, no es USDC | `contracts/usdc-prueba` |
+| 8 | USDC de testnet | 🟡 El servidor usa el **USDC de Circle de testnet** (faucet gratis, cada wallet activa su trustline). En tu PC puede seguir el token propio | `packages/shared/src/stellar/usdc.ts`, `contracts/usdc-prueba` |
 | 9 | Correos (Resend) | 🟡 Remitente de prueba: solo llegan al dueño de la cuenta de Resend | `apps/api/src/notificaciones/` |
 | 10 | Webhooks de Didit y Mux en tu PC | 🟡 No llegan (apuntan al servidor); la app consulta el estado sola | `kyc/`, `videos/` |
 | 11 | Textos legales | 🟡 **Ejemplos** escritos por una IA | `apps/web/src/legal/` |
@@ -59,7 +59,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 3. **Revisar el monto que se manda.** El código cotiza **en bolivianos** (`amount.denomination: 'in'`, con el tipo de cambio simulado como aproximación). Con `'out'` se fijaría lo que llega en USDC.
 4. **Datos del pagador y firmas.** El código todavía no pide los datos de `rampQuoteFields` (van como `payee`) ni maneja un `pendingAction` de tipo `SIGNATURE` o `COSIGN_APPROVAL`: hace falta registrar un firmante con `registerRampSigningHandler` y firmar el tramo con `signRampLeg`.
 5. **KYC de la rampa:** si el `pendingAction` es `KYC`, la persona sigue su `url`. Hay que ver si se puede reusar el KYC de Didit para no pedirlo dos veces.
-6. **El token:** en testnet la rampa real entregaría USDC «de verdad» de testnet, **no** el USDC de prueba de WorkVille (`PAYMENT_TOKEN_ID`). Por eso en testnet solo existe la rampa simulada. En mainnet, `PAYMENT_TOKEN_ID` tiene que ser el USDC que entrega la rampa.
+6. **El token:** la rampa real entrega USDC de Circle. En testnet el servidor ya usa ese USDC (`PAYMENT_TOKEN_ID` = su SAC, `CBIELTK6…DAMA`), así que la rampa de Pollar puede probarse en su sandbox. En mainnet, `PAYMENT_TOKEN_ID` es el SAC del USDC de Circle de mainnet (`npm run mainnet:revisar` lo exige).
 
 Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/propuestas/pagos-con-qr-bolivia.md`, que es un archivo local fuera de git.
 
@@ -86,7 +86,8 @@ Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/pro
 
 - **KYC (Didit):** la app de Didit es la **sandbox**, que no cobra y no verifica de verdad. En mainnet se usa la app de producción (`ENTORNO_SERVICIOS=produccion`), que sí cobra por cada verificación.
 - **Cuentas «prueba-…»:** `npm run datos:prueba` las marca como verificadas directamente en la base local, para no pasar por Didit en cada prueba (menos prueba-kyc).
-- **USDC de prueba:** es un contrato propio. En mainnet, `PAYMENT_TOKEN_ID` es el contrato SAC del USDC real.
+- **USDC de testnet:** el USDC de Circle de testnet (sin valor; se pide en https://faucet.circle.com). El token propio `contracts/usdc-prueba` queda para tu PC. En mainnet, `PAYMENT_TOKEN_ID` es el contrato SAC del USDC real.
+- **Rampa simulada con el USDC de Circle:** no puede emitir ese token, así que en el servidor queda apagada hasta que reparta desde una wallet «caja» (la misma que usan los datos de prueba).
 - **Correos:** con `onboarding@resend.dev` solo llegan al correo de la cuenta de Resend. Para enviar a cualquiera hace falta un dominio propio verificado.
 - **Webhooks:** en tu PC no llegan; la app le pregunta a Didit y a Mux cómo va. En el servidor tienen que ir por HTTPS.
 - **Textos legales:** son ejemplos. Lo que necesita un abogado está en rojo con el aviso de siempre.
