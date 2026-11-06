@@ -6,7 +6,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 |---|---|---|---|
 | 1 | Pagar con el QR del banco (en un pedido o desde el saldo de arriba: «Recargar con el QR de tu banco») | 🟡 **Simulada** en testnet: QR de mentira, USDC de Circle real (de testnet) desde una wallet caja | `apps/api/src/rampas/`, `apps/web/src/ui/pagos/PagarConQr.tsx`, `apps/web/src/ui/pagos/Saldo.tsx`, `packages/shared/src/rampas.ts` |
 | 2 | Pasar a mi banco (retiro) | 🟡 **Simulada** en testnet; con Pollar **no está hecha** | `apps/api/src/rampas/`, `apps/web/src/ui/panels/PanelRetiro.tsx` |
-| 3 | Rampa real con Pollar (QR del banco) | 🟠 **Programada, sin probar** | `apps/web/src/features/rampas/pollar.ts` |
+| 3 | Rampa real con Pollar (QR del banco) | 🟠 **Programada, probada solo con un cliente falso**; falta el sandbox de Pollar | `apps/web/src/features/rampas/pollar.ts`, `ui/pagos/RecargaConPollar.tsx`, `apps/api/src/rampas/` |
 | 4 | Entrar con Google | 🔴 **Apagado** (`POLLAR_GOOGLE` vacío): programado con Pollar, pero en la prueba no funcionó | `apps/web/src/features/auth/pollar.ts`, `sesion.tsx`, `PanelBienvenida.tsx` |
 | 5 | Entrar con el correo (Pollar) | 🟠 **Real, sin probar**: el panel de Pollar lo marca «próximamente» | los mismos archivos |
 | 6 | KYC (Didit) | 🟡 **Sandbox**: verifica sin cobrar y sin validez real | `apps/api/src/kyc/` |
@@ -60,14 +60,38 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 
 ## 3. Rampa real con Pollar
 
-`apps/web/src/features/rampas/pollar.ts` ya usa el SDK de Pollar 0.12, donde una rampa es una orden: `getRampRoutes('ONRAMP')`, `quoteRamp`, `createRampOrder` y `getRampOrder`. Se usa con `RAMPA_PROVEEDOR=pollar` (en mainnet, también si está vacía y Pollar está encendido; `servicios.rampa === 'pollar'`) y solo si la persona entró con Google o con el correo. **Nadie lo probó todavía.** Antes de usarlo:
+Se usa con `RAMPA_PROVEEDOR=pollar` (en mainnet, también si está vacía y Pollar está encendido; `servicios.rampa === 'pollar'`), solo si la persona entró con su correo (sesión de Pollar) y solo en los países de `RAMPA_POLLAR_PAISES` (vacío = Bolivia; la lista está en `PAISES_RAMPA`, `packages/shared/src/rampas.ts`). **No se probó con Pollar de verdad**: las pruebas usan un cliente falso (`apps/web/src/features/rampas/pollar.test.ts`).
 
-1. **Confirmar con Pollar** que tiene rampa para **Bolivia (BOB)**. Con una sesión iniciada, `getRampRoutes('ONRAMP')` lo responde (una ruta `BO` con `rail: 'QR'` que entregue USDC en Stellar); sin sesión, la API de Pollar devuelve 401.
-2. **Confirmar que su forma de pago «QR» sirve con QR Simple** y qué bancos lo aceptan.
-3. **Revisar el monto que se manda.** El código cotiza **en bolivianos** (`amount.denomination: 'in'`, con el tipo de cambio simulado como aproximación). Con `'out'` se fijaría lo que llega en USDC.
-4. **Datos del pagador y firmas.** El código todavía no pide los datos de `rampQuoteFields` (van como `payee`) ni maneja un `pendingAction` de tipo `SIGNATURE` o `COSIGN_APPROVAL`: hace falta registrar un firmante con `registerRampSigningHandler` y firmar el tramo con `signRampLeg`.
-5. **KYC de la rampa:** si el `pendingAction` es `KYC`, la persona sigue su `url`. Hay que ver si se puede reusar el KYC de Didit para no pedirlo dos veces.
-6. **El token:** la rampa real entrega USDC de Circle. En testnet el servidor ya usa ese USDC (`PAYMENT_TOKEN_ID` = su SAC, `CBIELTK6…DAMA`), así que la rampa de Pollar puede probarse en su sandbox. En mainnet, `PAYMENT_TOKEN_ID` es el SAC del USDC de Circle de mainnet (`npm run mainnet:revisar` lo exige).
+Cómo funciona (SDK de Pollar 0.12, donde una rampa es una orden):
+
+| Paso | Dónde | Qué hace |
+|---|---|---|
+| Rutas | `rutasDeRecarga` | `getRampRoutes('ONRAMP')`, solo las del país encendido, en su moneda y que entregan **el USDC de Circle en Stellar**. Primero la del método del país (QR en Bolivia, Pix en Brasil, transferencia en Argentina) |
+| Cotización | `cotizarRecarga` | `quoteRamp` con lo que tiene que **llegar** en USDC (`denomination: 'out'`). Muestra lo que se paga, la comisión del proveedor y cuánto tarda |
+| Sin ruta | `cotizarRecarga` | Explica por qué en español (los textos del SDK vienen en inglés: `pollar-textos.ts`). Si la ruta pasa por otra red, como la de Stereum, ofrece preparar la wallet ahí (`runRampWalletStep`); si falta la trustline, pide «Activar USDC» |
+| Datos del proveedor | `erroresDeCampos`, `crearOrden` | Los campos de `rampQuoteFields` (carnet, banco…), revisados con `rampFieldValid` antes de mandarlos como `payee` |
+| Orden | `crearOrden` | `createRampOrder`. Si la cotización manda el USDC a otra wallet, no se sigue |
+| Pantalla de pago | `vistaOrden` | `FIAT_PAYMENT`: el QR del proveedor (SVG o imagen), los datos de una transferencia o la página del proveedor. «Ya pagué» llama a `checkRampOrder` |
+| Firmas de tramos | `prepararFirmas`, `firmarTramo` | Un firmante de Stellar (`registerRampSigningHandler`) que antes de firmar revisa que la transacción solo gaste de la wallet de la persona (`assertRampStellarSigner`). Firma con la sesión de Pollar, solo desde el botón «Autorizar» |
+| KYC del proveedor | `vistaOrden` | `KYC`: el enlace del proveedor, o sus instrucciones |
+| Co-firma | `aprobarCofirma` | `COSIGN_APPROVAL`: aprueba desde el dispositivo (`cosign.approve`) y sigue la orden (`retryRampOrder`) |
+| Fallas | `vistaOrden`, `reintentar` | El texto de la falla y «Reintentar» (`retryRampOrder`) si se puede |
+| Registro en WorkVille | `POST /api/rampas/pollar/ordenes` y `/estado` | Una fila en `rampas` por orden (la referencia es el id de Pollar) y cada cambio de estado. Al completarse, la API **lee en la red** la transacción del último tramo y guarda el USDC que de verdad llegó a la wallet (`usdcRecibido` en `apps/api/src/stellar/cadena.ts`). Sin esa transacción, no queda completada |
+
+**Probarlo en el sandbox de Pollar (testnet).** Pollar no tiene bolivianos en testnet (pregunta 1 del plan), pero su sandbox tiene otros países. El mismo código sirve para Bolivia:
+
+1. En el `.env` local: `RAMPA_PROVEEDOR=pollar`, `POLLAR_API_KEY=…` y `RAMPA_POLLAR_PAISES` con un país del sandbox (`AR` o `PE`; `PE` y `CO` solo valen en testnet).
+2. `npm run dev` y entrar **con el correo**. Pollar solo funciona con HTTPS o en `localhost`.
+3. En el saldo, «Recargar con el QR de tu banco». Si no aparece ninguna forma de pago, la consola de Pollar dice qué rutas tiene la app: pedirles que encienda el país del sandbox.
+4. Seguir la orden hasta `completada` y revisar en la base que la fila de `rampas` tenga el `tx_hash` y el monto real.
+5. Anotar lo que no coincida: los campos que pide el proveedor, si aparece `SIGNATURE` o `COSIGN_APPROVAL` y qué pasa con el KYC.
+
+Lo que falta revisar:
+- **Bolivia de verdad:** que Pollar tenga la ruta `BO` con `rail: 'QR'` (por Stereum, con tramos en otra red) y que su QR sirva con QR Simple.
+- **Si la persona cierra la app** en medio de la orden, la fila de `rampas` queda en el último estado que vio la web. La orden sigue en Pollar: hay que retomarla con `listRampOrders({ open: 'true' })` (todavía no está hecho).
+- **Wallet externa (Freighter):** hoy la rampa necesita la sesión de Pollar. Falta saber si Pollar puede depositar en una wallet externa (pregunta 2).
+- **KYC dos veces:** ver si el KYC del proveedor (SEGIP) puede reusar el de Didit (pregunta 3).
+- **El token:** la rampa entrega USDC de Circle. En testnet el servidor ya lo usa (`PAYMENT_TOKEN_ID` = su SAC, `CBIELTK6…DAMA`). En mainnet es el SAC del USDC de Circle de mainnet (`npm run mainnet:revisar` lo exige).
 
 Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/propuestas/pagos-con-qr-bolivia.md`, que es un archivo local fuera de git.
 
