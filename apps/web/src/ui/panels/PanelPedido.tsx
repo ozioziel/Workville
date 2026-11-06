@@ -397,7 +397,7 @@ function FormularioResena({ pedidoId, nombre, onListo }: { pedidoId: string; nom
           </button>
         ))}
       </div>
-      <textarea className="campo" rows={2} maxLength={500} placeholder="¿Cómo te fue? (opcional)" value={comentario} onChange={(e) => setComentario(e.target.value)} />
+      <textarea aria-label="Comentario de la reseña" className="campo" rows={2} maxLength={500} placeholder="¿Cómo te fue? (opcional)" value={comentario} onChange={(e) => setComentario(e.target.value)} />
       <button
         type="button"
         className="boton boton-primario"
@@ -460,7 +460,7 @@ function Chat({ pedido, usuarioId, rol, onError }: { pedido: PedidoDetalle; usua
             }
           }}
         >
-          <input className="campo" placeholder="Escribe un mensaje…" maxLength={1000} value={texto} onChange={(e) => setTexto(e.target.value)} />
+          <input aria-label="Mensaje" className="campo" placeholder="Escribe un mensaje…" maxLength={1000} value={texto} onChange={(e) => setTexto(e.target.value)} />
           <button type="submit" className="boton boton-primario">
             Enviar
           </button>

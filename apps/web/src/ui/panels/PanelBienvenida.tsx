@@ -205,6 +205,7 @@ export function PanelBienvenida({ onListo }: { onListo: () => void }) {
                 producción.
               </p>
               <input
+                aria-label="Llave secreta de prueba"
                 type="password"
                 className="campo"
                 placeholder="S…"

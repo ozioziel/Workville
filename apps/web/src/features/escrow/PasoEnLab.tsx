@@ -85,7 +85,7 @@ export function PasoEnLab({
             {accion === 'resolver' && (
               <div className="fila">
                 <label className="etiqueta">A favor de:</label>
-                <select className="campo" value={aFavorDe} onChange={(e) => setAFavorDe(e.target.value as Parte)}>
+                <select aria-label="A favor de" className="campo" value={aFavorDe} onChange={(e) => setAFavorDe(e.target.value as Parte)}>
                   <option value="Cliente">Cliente ({pedido.cliente.nombre})</option>
                   <option value="Proveedor">Proveedor ({pedido.proveedor.nombre})</option>
                 </select>
@@ -118,6 +118,7 @@ export function PasoEnLab({
           <li>
             Pega el hash aquí:
             <input
+              aria-label="Hash de la transacción"
               className="campo"
               placeholder="64 caracteres, por ejemplo 6a274e17…"
               value={hash}

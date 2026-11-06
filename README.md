@@ -10,12 +10,25 @@ Funciona para los dos lados con un interruptor arriba al centro, que cambia el *
 
 **Novedades de la v2** (preparada para mainnet, todavía en **testnet**):
 - **Tres formas de pagar:** directo (1%), con garantía (3%) o **por etapas** (3% por fase), con un plan de fases que se acuerda antes de pagar y una prueba por cada fase.
-- **Firmar dentro de la app:** con tu wallet (también por QR) o entrando con Google o tu correo. La API verifica cada pago en la red; Stellar Lab queda como respaldo.
+- **Firmar dentro de la app:** con tu wallet (también por QR) o entrando con tu correo (Google está listo pero apagado hasta probarlo). La API verifica cada pago en la red; Stellar Lab queda como respaldo.
 - **Para quien no conoce cripto:** pagar con el QR de tu banco y pasar tu saldo a tu banco. En testnet es una rampa **simulada** ([qué está simulado](docs/simulaciones.md)).
 - **Confianza:** verificación de identidad (KYC, insignia ✔), varias wallets en una sola cuenta, reportar y bloquear, avisos por correo y en el navegador.
 - **Comunidad:** varios locales por persona, sectores «Creativo B», «C»…, portafolio con cuadros en la pared de tu local, personas en línea caminando por la villa y chat por cercanía.
 
 Primera versión en **testnet** (aparece la franja «Modo de prueba: el dinero no es real»). Qué falta para mainnet: [docs/mainnet.md](docs/mainnet.md).
+
+## Verlo en la red (testnet)
+
+Todo lo que mueve dinero se puede revisar en [stellar.expert](https://stellar.expert/explorer/testnet), sin instalar nada:
+
+| Qué | Dirección |
+|---|---|
+| Contrato **escrow v2** (pagos directos, con garantía y por etapas) | [`CB42MFK5…HHUVO`](https://stellar.expert/explorer/testnet/contract/CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO) |
+| Token de pago: **USDC de Circle** (SAC) | [`CBIELTK6…MXQDAMA`](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA) |
+| **Admin** del contrato, multifirma 2 de 3 | [`GD74KD7J…FINNNTU`](https://stellar.expert/explorer/testnet/account/GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU) |
+| **Árbitro** de las disputas, multifirma 1 de 2 | [`GBGNHOJB…EZDBB`](https://stellar.expert/explorer/testnet/account/GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB) |
+
+Para probarlo de punta a punta: entra con una wallet de testnet (Freighter u otra), pide USDC de prueba en el [faucet de Circle](https://faucet.circle.com) o con la recarga simulada del saldo, contrata un servicio y sigue el pedido; cada paso deja su transacción en la red. El detalle de cada cuenta y contrato está en [cuentas y contratos](docs/cuentas-y-contratos.md), y lo que todavía es simulado, en [simulaciones](docs/simulaciones.md).
 
 ## Cómo está hecho
 
@@ -38,6 +51,9 @@ Documentación:
 - [Guía de Supabase](docs/guia-supabase.md)
 - [Despliegue en el VPS](docs/despliegue-vps.md)
 - [Contrato v2 (para el auditor)](docs/contrato-v2.md)
+- [Cuentas y contratos desplegados](docs/cuentas-y-contratos.md)
+- [Multifirmas del admin y del árbitro](docs/multifirma.md)
+- [Qué está simulado o sin probar](docs/simulaciones.md)
 - [Pasar a mainnet](docs/mainnet.md)
 - [Roadmap](docs/roadmap.md)
 
@@ -58,7 +74,7 @@ npm run dev
 
 Abre <http://localhost:5173>.
 
-**Para entrar:** con Google o tu correo (si `POLLAR_API_KEY` está configurada), con Freighter u otra wallet en testnet (también por QR con WalletConnect) o, en modo desarrollo, con la opción *«entrar con una llave de prueba»*. En ese caso pega la llave secreta de un usuario de `.seed-keys.json`.
+**Para entrar:** con tu correo (si `POLLAR_API_KEY` está configurada; Google, además, con `POLLAR_GOOGLE=si`), con Freighter u otra wallet en testnet (también por QR con WalletConnect) o, en modo desarrollo, con la opción *«entrar con una llave de prueba»*. En ese caso pega la llave secreta de un usuario de `.seed-keys.json`.
 
 Sin las llaves de los servicios externos (Didit, Mux, Pollar, Resend, VAPID, WalletConnect) la app funciona igual y oculta esas funciones. Para el contrato v2 hace falta `ESCROW_V2_CONTRACT_ID` ([guía](docs/guia-stellar-lab.md#contrato-v2)).
 

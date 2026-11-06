@@ -65,6 +65,7 @@ export function PanelComentarios() {
       <p className="tenue">Cuéntanos qué mejorarías o qué falló. Lo lee el equipo de WorkVille.</p>
       <Pestanas etiqueta="Tipo de comentario" opciones={TIPOS} valor={tipo} onCambiar={setTipo} />
       <textarea
+        aria-label="Tu comentario"
         className="campo"
         rows={5}
         maxLength={2000}

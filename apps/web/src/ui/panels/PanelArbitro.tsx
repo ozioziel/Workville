@@ -190,6 +190,7 @@ function Reportes() {
           {r.estado === 'abierto' ? (
             <>
               <input
+                aria-label="Decisión"
                 className="campo"
                 placeholder="Decisión (la ve quien reportó)"
                 value={resolucion[r.id] ?? ''}

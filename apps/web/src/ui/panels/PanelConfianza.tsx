@@ -52,7 +52,7 @@ export function PanelReportar({ reporte, objetoId, nombre }: { reporte: TipoRepo
           </label>
         ))}
       </fieldset>
-      <textarea className="campo" rows={3} maxLength={1000} placeholder="Cuéntanos más (opcional)" value={detalle} onChange={(e) => setDetalle(e.target.value)} />
+      <textarea aria-label="Detalle del reporte" className="campo" rows={3} maxLength={1000} placeholder="Cuéntanos más (opcional)" value={detalle} onChange={(e) => setDetalle(e.target.value)} />
       <button
         type="button"
         className="boton boton-peligro"
@@ -218,7 +218,7 @@ export function PanelAvisosFuera() {
       <section className="caja pila">
         <strong>Avisos por correo</strong>
         {!sv.correo && <p className="tenue pequeno">Los correos todavía no están disponibles en este servidor; puedes dejar tu correo guardado.</p>}
-        <input className="campo" type="email" autoComplete="email" placeholder="tu@correo.com" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+        <input aria-label="Correo para avisos" className="campo" type="email" autoComplete="email" placeholder="tu@correo.com" value={correo} onChange={(e) => setCorreo(e.target.value)} />
         {pref.correo && !pref.correo_verificado && <p className="tenue pequeno">Te mandamos un enlace para confirmar ese correo.</p>}
         <div className="fila">
           <button

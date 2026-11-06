@@ -34,6 +34,9 @@ describe('rampa con Pollar', () => {
     await t.http().post('/api/rampas/pollar/ordenes').set(con(s)).send(orden(Keypair.random().publicKey())).expect(403);
     await t.http().post('/api/rampas/pollar/ordenes').set(con(s)).send(orden(yo, { pais: 'BR', moneda: 'BRL' })).expect(400);
     await t.http().post('/api/rampas/pollar/ordenes').set(con(s)).send(orden(yo, { moneda: 'ARS' })).expect(400);
+    // Un monto local que redondea a 0,00 no se puede guardar: se dice antes de chocar con la base.
+    const chico = await t.http().post('/api/rampas/pollar/ordenes').set(con(s)).send(orden(yo, { monto_local: '0.004' })).expect(400);
+    expect(chico.body.mensaje).toMatch(/demasiado chico/);
     // El retiro con Pollar todavía no existe.
     await t.http().post('/api/rampas/pollar/ordenes').set(con(s)).send(orden(yo, { sentido: 'salida' })).expect(400);
 

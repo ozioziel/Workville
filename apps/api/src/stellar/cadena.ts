@@ -57,6 +57,27 @@ export function usdcRecibido(tx: Transaction, destino: string, activo: { codigo:
   return total;
 }
 
+/**
+ * Unidades del USDC que llegaron a `destino` según los eventos del SAC (`transfer` y `mint`). Cuenta también lo que
+ * llega a través de otro contrato, que no se ve en las operaciones: por ejemplo el puente CCTP de Circle, cuyo
+ * `CctpForwarder` acuña el USDC y lo reenvía. Tópicos (SEP-41/CAP-67): ["transfer", from, to, activo] y
+ * ["mint", to, activo]; el dato es el monto (i128) o, con dirección muxed, un mapa { amount, to_muxed_id }.
+ */
+export function usdcRecibidoEnEventos(eventos: readonly xdr.ContractEvent[], destino: string, tokenId: string): bigint {
+  let total = 0n;
+  for (const ev of eventos) {
+    if (!ev.contractId || Address.contract(ev.contractId.toBytes()).toString() !== tokenId) continue;
+    const cuerpo = ev.body.v0;
+    const topicos = cuerpo.topics.map((t: xdr.ScVal) => scValToNative(t) as unknown);
+    const a = topicos[0] === 'transfer' ? topicos[2] : topicos[0] === 'mint' ? topicos[1] : null;
+    if (a !== destino) continue;
+    const dato = scValToNative(cuerpo.data) as unknown;
+    const monto = typeof dato === 'bigint' ? dato : (dato as { amount?: unknown } | null)?.amount;
+    if (typeof monto === 'bigint' && monto > 0n) total += monto;
+  }
+  return total;
+}
+
 export function invocacionDeSobre(sobre: xdr.TransactionEnvelope, passphrase: string): Invocacion | null {
   return invocacionDe(transaccionDeXdr(sobre.toXDR('base64'), passphrase));
 }

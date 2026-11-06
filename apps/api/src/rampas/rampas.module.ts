@@ -437,6 +437,10 @@ export class RampasService implements OnModuleInit, OnModuleDestroy {
     }
     await this.exigirRecargaPropia(yo, dto.direccion, dto.pedido_id);
     const local = Number(dto.monto_local);
+    // Se guardan 2 decimales en moneda local y 6 en el tipo de cambio: un monto que redondea a 0 no cabe en la base.
+    if (Number(local.toFixed(2)) <= 0 || Number((local / Number(dto.monto_usdc)).toFixed(6)) <= 0) {
+      throw new BadRequestException(`El monto en ${pais.moneda} es demasiado chico para registrar la orden (mínimo 0,01)`);
+    }
     // Una orden recién creada no puede estar completa: eso se registra con su transacción (actualizarOrdenPollar).
     const estado = estadoRampaDePollar(dto.estado);
     return this.prisma.rampa.create({

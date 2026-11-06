@@ -157,14 +157,24 @@ export function SaldoArriba() {
   );
 }
 
+/** Cuánto se espera después de la última tecla antes de cotizar. */
+const ESPERA_AL_ESCRIBIR_MS = 600;
+
 /** «Recargar con el QR de tu banco» sin un pedido: elegir cuánto y pagar el QR (simulado en testnet). */
 export function PanelRecargar() {
   const { usuario, firmante } = useSesion();
   const rampa = servicios().rampa;
   const [monto, setMonto] = useState('10');
+  // El monto con el que se cotiza: se toma cuando la persona deja de escribir, para no pedir una cotización (o un QR)
+  // nuevo en cada tecla.
+  const [montoElegido, setMontoElegido] = useState(monto);
   const [listo, setListo] = useState(false);
   const direccion = firmante?.direccion ?? usuario?.direccion ?? '';
   const valido = /^\d{1,4}(\.\d{1,2})?$/.test(monto) && Number(monto) >= RAMPA_SIMULADA.minimoUsdc && Number(monto) <= RAMPA_SIMULADA.maximoUsdc;
+  useEffect(() => {
+    const t = setTimeout(() => setMontoElegido(monto), ESPERA_AL_ESCRIBIR_MS);
+    return () => clearTimeout(t);
+  }, [monto]);
 
   if (!usuario) return <Aviso tipo="info">Entra para recargar tu saldo.</Aviso>;
   if (!rampa) return <Aviso tipo="info">Recargar con el QR del banco todavía no está disponible en este servidor.</Aviso>;
@@ -186,6 +196,7 @@ export function PanelRecargar() {
         </>
       )}
       {valido &&
+        montoElegido === monto &&
         (rampa === 'simulada' ? (
           <RecargaSimulada key={monto} montoUsdc={Number(monto).toFixed(2)} direccion={direccion} onAcreditada={() => setListo(true)} />
         ) : (

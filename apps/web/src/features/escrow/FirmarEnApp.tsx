@@ -183,7 +183,7 @@ function FirmarFueraV2({
         <ol className="lista-pasos">
           <li>
             Wallet con la que vas a firmar:
-            <input className="campo" value={direccion} onChange={(e) => setDireccion(e.target.value.trim())} spellCheck={false} placeholder="G…" />
+            <input aria-label="Wallet con la que vas a firmar" className="campo" value={direccion} onChange={(e) => setDireccion(e.target.value.trim())} spellCheck={false} placeholder="G…" />
             <button type="button" className="boton boton-chico" disabled={deshabilitado || ocupado || !/^G[A-Z2-7]{55}$/.test(direccion)} onClick={preparar}>
               {ocupado && !preparada ? 'Armando…' : 'Armar la transacción'}
             </button>
@@ -192,7 +192,7 @@ function FirmarFueraV2({
             <>
               <li>
                 Copia la transacción (sin firmar):
-                <textarea className="campo" rows={3} readOnly value={preparada.xdr} spellCheck={false} />
+                <textarea aria-label="Transacción sin firmar" className="campo" rows={3} readOnly value={preparada.xdr} spellCheck={false} />
                 <Copiar texto={preparada.xdr} />
               </li>
               <li>
@@ -206,7 +206,7 @@ function FirmarFueraV2({
           )}
           <li>
             Pega aquí el hash (64 caracteres) o la transacción firmada:
-            <textarea className="campo" rows={2} value={respuesta} onChange={(e) => setRespuesta(e.target.value)} spellCheck={false} />
+            <textarea aria-label="Hash o transacción firmada" className="campo" rows={2} value={respuesta} onChange={(e) => setRespuesta(e.target.value)} spellCheck={false} />
             <button type="button" className="boton boton-primario boton-chico" disabled={ocupado || !texto || (!esHash && !preparada)} onClick={registrar}>
               {ocupado && preparada ? 'Verificando…' : esHash ? 'Registrar el paso con este hash' : 'Enviar la transacción firmada'}
             </button>
