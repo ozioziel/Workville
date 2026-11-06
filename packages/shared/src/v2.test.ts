@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACCIONES_FASE,
+  PAISES_RAMPA,
+  paisesRampaEncendidos,
   DOCUMENTOS_LEGALES,
   dominioDe,
   incrustarVideo,
@@ -236,5 +238,18 @@ describe('mejoras de la plaza: trabajos, lugares y CV', () => {
     expect(cvArmado({ ...vacio, acerca_de: '   ' })).toBe(false);
     expect(cvArmado({ ...vacio, habilidades: ['Figma'] })).toBe(true);
     expect(cvArmado(vacio, 1)).toBe(true);
+  });
+});
+
+describe('países de la rampa con Pollar', () => {
+  it('solo Bolivia está encendido por defecto; Brasil y Argentina listos pero apagados', () => {
+    expect(paisesRampaEncendidos().map((p) => p.pais)).toEqual(['BO']);
+    expect(PAISES_RAMPA.find((p) => p.pais === 'BR')).toMatchObject({ moneda: 'BRL', metodo: 'PIX', activo: false });
+    expect(PAISES_RAMPA.find((p) => p.pais === 'AR')).toMatchObject({ moneda: 'ARS', metodo: 'BANK_TRANSFER', activo: false });
+  });
+
+  it('la lista del servidor elige los países (también los del sandbox) y rechaza uno desconocido', () => {
+    expect(paisesRampaEncendidos(['ar', 'PE']).map((p) => p.moneda)).toEqual(['ARS', 'PEN']);
+    expect(() => paisesRampaEncendidos(['XX'])).toThrow('País de rampa desconocido: XX');
   });
 });

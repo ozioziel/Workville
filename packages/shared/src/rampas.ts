@@ -41,6 +41,57 @@ export function rampaTerminada(estado: EstadoRampa): boolean {
   return estado === 'completada' || estado === 'fallida' || estado === 'reembolsada' || estado === 'vencida';
 }
 
+// ---------------------------------------------------------------
+// Países y métodos de la rampa con Pollar
+// ---------------------------------------------------------------
+
+/** Cómo paga o cobra la persona en su moneda (los mismos nombres que usa Pollar: `rail`). */
+export type MetodoRampa = 'QR' | 'PIX' | 'BANK_TRANSFER' | 'PSE';
+
+export interface PaisRampa {
+  /** Código ISO de 2 letras, como lo manda Pollar. */
+  pais: string;
+  nombre: string;
+  moneda: string;
+  metodo: MetodoRampa;
+  /** Cómo lo ve la persona. */
+  etiquetaMetodo: string;
+  /** Encendido por defecto. Los otros se encienden con RAMPA_POLLAR_PAISES (por ejemplo, para probar el sandbox). */
+  activo: boolean;
+  /** Solo para probar con el sandbox de Pollar (testnet): nadie lo usa de verdad. */
+  soloSandbox?: boolean;
+}
+
+/**
+ * Países donde puede funcionar la rampa con Pollar. Solo Bolivia está encendido; Brasil (Pix) y Argentina
+ * (transferencia) están listos porque Pollar ya los tiene en vivo. Perú y Colombia sirven para probar el
+ * sandbox de Pollar en testnet, que no tiene bolivianos (docs/simulaciones.md).
+ */
+export const PAISES_RAMPA: readonly PaisRampa[] = [
+  { pais: 'BO', nombre: 'Bolivia', moneda: 'BOB', metodo: 'QR', etiquetaMetodo: 'QR de tu banco', activo: true },
+  { pais: 'BR', nombre: 'Brasil', moneda: 'BRL', metodo: 'PIX', etiquetaMetodo: 'Pix', activo: false },
+  { pais: 'AR', nombre: 'Argentina', moneda: 'ARS', metodo: 'BANK_TRANSFER', etiquetaMetodo: 'Transferencia bancaria (CBU o CVU)', activo: false },
+  { pais: 'PE', nombre: 'Perú', moneda: 'PEN', metodo: 'BANK_TRANSFER', etiquetaMetodo: 'Transferencia bancaria', activo: false, soloSandbox: true },
+  { pais: 'CO', nombre: 'Colombia', moneda: 'COP', metodo: 'PSE', etiquetaMetodo: 'PSE', activo: false, soloSandbox: true },
+];
+
+export function paisRampa(pais: string): PaisRampa | undefined {
+  return PAISES_RAMPA.find((p) => p.pais === pais.toUpperCase());
+}
+
+/**
+ * Países encendidos: los de la lista que se pase (RAMPA_POLLAR_PAISES) o, si no hay lista, los activos.
+ * Lanza un error si la lista trae un país que no está en PAISES_RAMPA.
+ */
+export function paisesRampaEncendidos(lista?: readonly string[] | null): PaisRampa[] {
+  if (!lista?.length) return PAISES_RAMPA.filter((p) => p.activo);
+  return lista.map((codigo) => {
+    const p = paisRampa(codigo);
+    if (!p) throw new Error(`País de rampa desconocido: ${codigo} (los posibles: ${PAISES_RAMPA.map((x) => x.pais).join(', ')})`);
+    return p;
+  });
+}
+
 export const RAMPA_SIMULADA = {
   pais: 'BO',
   moneda: 'BOB',
