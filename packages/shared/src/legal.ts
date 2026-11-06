@@ -16,8 +16,8 @@ export interface DatosDocumento {
 }
 
 export const DOCUMENTOS_LEGALES: readonly DatosDocumento[] = [
-  { id: 'terminos', titulo: 'Términos y condiciones', version: '2026-10-07', requiereAceptacion: true },
-  { id: 'privacidad', titulo: 'Política de privacidad', version: '2026-10-07', requiereAceptacion: true },
+  { id: 'terminos', titulo: 'Términos y condiciones', version: '2026-11-06', requiereAceptacion: true },
+  { id: 'privacidad', titulo: 'Política de privacidad', version: '2026-11-06', requiereAceptacion: true },
   { id: 'pagos', titulo: 'Pagos, fases y disputas', version: '2026-10-07', requiereAceptacion: true },
   { id: 'comisiones', titulo: 'Comisiones y reglas', version: '2026-10-07', requiereAceptacion: false },
   { id: 'impuestos', titulo: 'Impuestos', version: '2026-10-07', requiereAceptacion: false },
