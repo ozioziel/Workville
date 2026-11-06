@@ -526,7 +526,7 @@ function EditorCv() {
         </div>
       )}
       <div className="fila">
-        <input
+        <input aria-label="Nueva habilidad"
           className="campo"
           maxLength={r.largoHabilidad}
           placeholder="Figma, edición de video, inglés técnico…"
@@ -833,7 +833,7 @@ function FormularioProyecto({
       )}
       {medios < r.maxMediosPorProyecto && (
         <div className="fila">
-          <input className="campo" placeholder="Enlace de YouTube o Vimeo" value={nuevoVideo} onChange={(e) => setNuevoVideo(e.target.value)} />
+          <input aria-label="Enlace de YouTube o Vimeo" className="campo" placeholder="Enlace de YouTube o Vimeo" value={nuevoVideo} onChange={(e) => setNuevoVideo(e.target.value)} />
           <button type="button" className="boton" disabled={!nuevoVideo.trim()} onClick={sumarVideo}>
             Sumar video
           </button>
@@ -861,7 +861,7 @@ function FormularioProyecto({
       )}
       {enlaces.length < 8 && (
         <div className="fila">
-          <input className="campo" type="url" placeholder="https://…" value={nuevoEnlace} onChange={(e) => setNuevoEnlace(e.target.value)} />
+          <input aria-label="Enlace del proyecto" className="campo" type="url" placeholder="https://…" value={nuevoEnlace} onChange={(e) => setNuevoEnlace(e.target.value)} />
           <button type="button" className="boton" disabled={!nuevoEnlace.trim()} onClick={sumarEnlace}>
             Sumar enlace
           </button>

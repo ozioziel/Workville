@@ -204,7 +204,7 @@ export function PanelBienvenida({ onListo }: { onListo: () => void }) {
                 Pega la llave secreta (S…) de una wallet de ejemplo de <code>.seed-keys.json</code>. Solo testnet; esta opción no existe en
                 producción.
               </p>
-              <input
+              <input aria-label="Llave secreta de prueba"
                 type="password"
                 className="campo"
                 placeholder="S…"

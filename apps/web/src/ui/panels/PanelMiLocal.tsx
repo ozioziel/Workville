@@ -309,8 +309,8 @@ function FormularioServicio({
   return (
     <div className="caja caja-info pila">
       <strong>{servicio ? 'Editar servicio' : 'Nuevo servicio'}</strong>
-      <input className="campo" placeholder="Título (por ejemplo: Logo para tu marca)" maxLength={60} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-      <textarea className="campo" rows={3} maxLength={1000} placeholder="¿Qué incluye?" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+      <input aria-label="Título del servicio" className="campo" placeholder="Título (por ejemplo: Logo para tu marca)" maxLength={60} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+      <textarea aria-label="Qué incluye el servicio" className="campo" rows={3} maxLength={1000} placeholder="¿Qué incluye?" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
       <div className="fila">
         <label className="etiqueta">
           Precio (USDC)
