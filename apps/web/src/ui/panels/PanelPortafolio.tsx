@@ -526,7 +526,8 @@ function EditorCv() {
         </div>
       )}
       <div className="fila">
-        <input aria-label="Nueva habilidad"
+        <input
+          aria-label="Nueva habilidad"
           className="campo"
           maxLength={r.largoHabilidad}
           placeholder="Figma, edición de video, inglés técnico…"

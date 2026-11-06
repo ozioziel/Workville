@@ -117,7 +117,8 @@ export function PasoEnLab({
           <li>Pulsa «Simulate & submit», firma con tu wallet y copia el hash de la transacción.</li>
           <li>
             Pega el hash aquí:
-            <input aria-label="Hash de la transacción"
+            <input
+              aria-label="Hash de la transacción"
               className="campo"
               placeholder="64 caracteres, por ejemplo 6a274e17…"
               value={hash}

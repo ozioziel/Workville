@@ -189,7 +189,8 @@ function Reportes() {
           {r.tipo === 'proyecto' && <BotonVer tipo="proyecto" id={r.objeto_id} />}
           {r.estado === 'abierto' ? (
             <>
-              <input aria-label="Decisión"
+              <input
+                aria-label="Decisión"
                 className="campo"
                 placeholder="Decisión (la ve quien reportó)"
                 value={resolucion[r.id] ?? ''}
