@@ -68,7 +68,7 @@ export function revisarConfiguracion(c: Configuracion, extra: { llavesDeEjemplo:
     s.plazoRevisionSeg === reglas.plazos.revisionSeg,
     `PLAZO_REVISION_SEG (${s.plazoRevisionSeg}) no coincide con el archivo de reglas (${reglas.plazos.revisionSeg})`,
   );
-  exigir(!c.rampaSimulada, 'RAMPA_SIMULADA está encendida: en mainnet la rampa es real (docs/simulaciones.md)');
+  exigir(c.rampa !== 'simulada', 'La rampa simulada está encendida (RAMPA_PROVEEDOR o RAMPA_SIMULADA): en mainnet la rampa es real (docs/simulaciones.md)');
   if (s.arbitro && s.tesoreria && s.arbitro === s.tesoreria) {
     problemas.push('El árbitro y la tesorería deben ser cuentas distintas');
   }

@@ -1,6 +1,6 @@
 // Pruebas unitarias sin red: el USDC de Circle (SAC), su trustline y la activación desde la app.
 import { PASSPHRASE, USDC_CIRCLE, activoDeNombreSac } from '@cryptoville/shared';
-import { Account, Asset, BASE_FEE, Keypair, Networks, Operation, TransactionBuilder, type xdr } from '@stellar/stellar-sdk';
+import { Account, Asset, BASE_FEE, Keypair, Networks, Operation, TransactionBuilder, scValToNative, type xdr } from '@stellar/stellar-sdk';
 import { leerConfiguracion } from '../src/config/configuracion';
 import { cuentaSinTrustline } from '../src/stellar/cadena';
 import { StellarService } from '../src/stellar/stellar.service';
@@ -103,5 +103,34 @@ describe('activar USDC desde la app', () => {
         { direccion: proveedor, quien: 'La wallet de cobro del proveedor', solucion: 'avísale.' },
       ]),
     ).rejects.toThrow('La wallet de cobro del proveedor todavía no acepta USDC (le falta la trustline): avísale.');
+  });
+});
+
+describe('rampa simulada: la caja manda el USDC', () => {
+  const caja = Keypair.random();
+  const persona = Keypair.random().publicKey();
+
+  /** El servicio con la rampa simulada encendida, sin red: `preparar` y `enviar` de mentira. */
+  function conCaja(env: NodeJS.ProcessEnv = { ...ENV, RAMPA_PROVEEDOR: 'simulada' }) {
+    const s = new StellarService(leerConfiguracion(env));
+    const xdrDeMentira = firmada(caja, Operation.changeTrust({ asset: USDC }));
+    const preparar = jest.spyOn(s, 'preparar').mockResolvedValue({ xdr: xdrDeMentira, hash: 'h' } as never);
+    jest.spyOn(s, 'enviar').mockResolvedValue({} as never);
+    return { s, preparar };
+  }
+
+  it('solo llama a transfer del token de pago, desde la caja', async () => {
+    const { s, preparar } = conCaja();
+    await s.pagarDesdeCaja(caja.secret(), persona, '100000000');
+    expect(preparar).toHaveBeenCalledTimes(1);
+    const [fuente, contrato, funcion, args] = preparar.mock.calls[0];
+    expect([fuente, contrato, funcion]).toEqual([caja.publicKey(), USDC_CIRCLE.testnet.contrato, 'transfer']);
+    expect((args as xdr.ScVal[]).map((a) => scValToNative(a))).toEqual([caja.publicKey(), persona, 100000000n]);
+  });
+
+  it('no manda sin la rampa simulada, a la misma caja ni un monto de 0', async () => {
+    await expect(conCaja(ENV).s.pagarDesdeCaja(caja.secret(), persona, '1')).rejects.toThrow('solo existe en testnet');
+    await expect(conCaja().s.pagarDesdeCaja(caja.secret(), caja.publicKey(), '1')).rejects.toThrow('a sí misma');
+    await expect(conCaja().s.pagarDesdeCaja(caja.secret(), persona, '0')).rejects.toThrow('mayor que 0');
   });
 });

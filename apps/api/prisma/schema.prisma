@@ -871,7 +871,7 @@ model Rampa {
   comision_local Decimal  @default(0) @db.Decimal(20, 2)
   direccion      String
   pedido_id      String?  @db.Uuid
-  /// esperando_pago | acreditada | esperando_envio | enviada | vencida | fallida
+  /// creada | esperando_pago | procesando | liquidando | completada | fallida | reembolsada | vencida (los de una orden de Pollar, más vencida)
   estado         String
   referencia     String   @unique
   qr_payload     String?

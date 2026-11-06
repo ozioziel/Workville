@@ -1,12 +1,13 @@
 // WorkVille v2: «pagar con el QR del banco» y «pasar a mi banco» con la rampa SIMULADA (solo testnet).
-// Sin red: el pago simulado del banco deja un hash de mentira (en la app de verdad, emite USDC de prueba).
+// Sin red: el pago simulado del banco deja un hash de mentira (en la app de verdad, la caja manda USDC de Circle de testnet).
+import { esQrSimulado, leerQrEmv } from '@cryptoville/shared';
 import { Keypair } from '@stellar/stellar-sdk';
 import { clienteCon, con, usarApp } from './ayudas';
 
 // ayudas.ts apaga los servicios externos; esta prueba enciende solo la rampa simulada.
-process.env.RAMPA_SIMULADA = 'si';
+process.env.RAMPA_PROVEEDOR = 'simulada';
 afterAll(() => {
-  process.env.RAMPA_SIMULADA = '';
+  process.env.RAMPA_PROVEEDOR = '';
 });
 
 const t = usarApp();
@@ -17,7 +18,7 @@ describe('rampa simulada', () => {
     expect(c.body.servicios.rampa).toBe('simulada');
   });
 
-  it('recarga: cotiza en bolivianos, da un QR de mentira y al «pagar» queda acreditada una sola vez', async () => {
+  it('recarga: cotiza en bolivianos, da un QR de mentira y al «pagar» queda completada una sola vez', async () => {
     const s = await t.entrar();
     const cot = await t.http().post('/api/rampas/cotizacion').set(con(s)).send({ sentido: 'entrada', monto_usdc: '10' }).expect(201);
     expect(cot.body).toMatchObject({ proveedor: 'simulada', moneda: 'BOB', monto_local: '70.30' });
@@ -27,7 +28,9 @@ describe('rampa simulada', () => {
     await t.http().post('/api/rampas/entradas').set(con(s)).send({ monto_usdc: '10', direccion: Keypair.random().publicKey() }).expect(403);
     const r = await t.http().post('/api/rampas/entradas').set(con(s)).send({ monto_usdc: '10', direccion: s.par.publicKey() }).expect(201);
     expect(r.body).toMatchObject({ estado: 'esperando_pago', sentido: 'entrada', proveedor: 'simulada' });
-    expect(r.body.qr_payload).toMatch(/^SIMULADO-WORKVILLE\|/);
+    // QR con formato de QR Simple (EMVCo), con el monto en bolivianos y la marca SIMULADO.
+    expect(esQrSimulado(r.body.qr_payload)).toBe(true);
+    expect(leerQrEmv(r.body.qr_payload)['54']).toBe('70.30');
 
     // Otra persona no puede «pagar» la recarga ajena ni verla.
     const otra = await t.entrar();
@@ -38,11 +41,21 @@ describe('rampa simulada', () => {
     expect(propia.data).toEqual([{ id: r.body.id, estado: 'esperando_pago' }]);
 
     const pagada = await t.http().post(`/api/rampas/entradas/${r.body.id}/simular-pago`).set(con(s)).expect(201);
-    expect(pagada.body.estado).toBe('acreditada');
+    expect(pagada.body.estado).toBe('completada');
     expect(pagada.body.tx_hash).toMatch(/^[0-9a-f]{64}$/);
     // Dos clics no emiten dos veces: la segunda devuelve la misma.
     const otraVez = await t.http().post(`/api/rampas/entradas/${r.body.id}/simular-pago`).set(con(s)).expect(201);
     expect(otraVez.body.tx_hash).toBe(pagada.body.tx_hash);
+  });
+
+  it('una recarga que ya se está procesando no se vuelve a mandar', async () => {
+    const s = await t.entrar();
+    const r = await t.http().post('/api/rampas/entradas').set(con(s)).send({ monto_usdc: '2', direccion: s.par.publicKey() }).expect(201);
+    for (const estado of ['procesando', 'liquidando']) {
+      await t.prisma.rampa.update({ where: { id: r.body.id }, data: { estado } });
+      await t.http().post(`/api/rampas/entradas/${r.body.id}/simular-pago`).set(con(s)).expect(409);
+    }
+    expect((await t.prisma.rampa.findUniqueOrThrow({ where: { id: r.body.id } })).tx_hash).toBeNull();
   });
 
   it('un QR vencido ya no se puede pagar', async () => {
@@ -59,7 +72,8 @@ describe('rampa simulada', () => {
     await t.http().post('/api/rampas/salidas').set(con(s)).send({ ...base, banco: 'Banco Inventado' }).expect(400);
     await t.http().post('/api/rampas/salidas').set(con(s)).send({ ...base, banco: 'Banco Unión', cuenta: '12-34' }).expect(400);
     const r = await t.http().post('/api/rampas/salidas').set(con(s)).send({ ...base, banco: 'Banco Unión' }).expect(201);
-    expect(r.body).toMatchObject({ estado: 'esperando_envio', banco: 'Banco Unión', cuenta_final: '7890', monto_local: '68.9' });
+    // Como una orden de Pollar: la rampa espera el USDC de la persona.
+    expect(r.body).toMatchObject({ estado: 'esperando_pago', banco: 'Banco Unión', cuenta_final: '7890', monto_local: '68.9' });
     expect(JSON.stringify(r.body)).not.toContain('1234567890');
   });
 });

@@ -167,7 +167,38 @@ describe('rampa simulada', () => {
     const salida = cotizarRampaSimulada('salida', '10');
     expect(salida.monto_local).toBe('68.90');
     expect(() => cotizarRampaSimulada('entrada', '0')).toThrow();
-    expect(qrRampaSimulada('CV-ABC123', '70.30')).toMatch(/^SIMULADO-WORKVILLE\|/);
+  });
+
+  it('el QR tiene el formato de un QR Simple (EMVCo) y la marca SIMULADO', async () => {
+    const { qrRampaSimulada, leerQrEmv, esQrSimulado, crcQr, MARCA_QR_SIMULADO } = await import('./rampas.js');
+    // Vector de prueba del CRC-16/CCITT-FALSE.
+    expect(crcQr('123456789')).toBe('29B1');
+    const qr = qrRampaSimulada('CV-ABC123', '70.30');
+    const campos = leerQrEmv(qr);
+    expect(campos).toMatchObject({ '00': '01', '01': '12', '53': '068', '54': '70.30', '58': 'BO', '59': 'WORKVILLE SIMULADO' });
+    expect(leerQrEmv(campos['26'])).toEqual({ '00': MARCA_QR_SIMULADO, '01': 'CV-ABC123' });
+    expect(leerQrEmv(campos['62'])).toEqual({ '05': 'CV-ABC123', '08': 'SIMULADO - NO PAGAR' });
+    // El control del final es el CRC de todo lo anterior (incluido «6304»).
+    expect(qr.slice(-4)).toBe(crcQr(qr.slice(0, -4)));
+    expect(esQrSimulado(qr)).toBe(true);
+    expect(esQrSimulado('000201010212')).toBe(false);
+    expect(esQrSimulado('no es un qr')).toBe(false);
+    expect(() => qrRampaSimulada('CV-ABC123', '70.30', 'XYZ')).toThrow();
+  });
+
+  it('los estados son los de una orden de rampa de Pollar', async () => {
+    const { ESTADO_RAMPA_DE_POLLAR, ESTADOS_RAMPA, estadoRampaDePollar, etiquetaEstadoRampa, rampaTerminada } = await import('./rampas.js');
+    // Todos los estados de una orden de Pollar (@pollar/core 0.12) tienen el suyo.
+    expect(Object.keys(ESTADO_RAMPA_DE_POLLAR).sort()).toEqual(['awaiting_payment', 'completed', 'created', 'failed', 'processing', 'refunded', 'settling_onchain']);
+    expect(new Set(Object.values(ESTADO_RAMPA_DE_POLLAR)).size).toBe(7);
+    expect(estadoRampaDePollar('settling_onchain')).toBe('liquidando');
+    expect(estadoRampaDePollar('algo_nuevo')).toBe('procesando');
+    for (const e of ESTADOS_RAMPA) {
+      expect(etiquetaEstadoRampa('entrada', e)).toBeTruthy();
+      expect(etiquetaEstadoRampa('salida', e)).toBeTruthy();
+    }
+    expect(etiquetaEstadoRampa('salida', 'esperando_pago')).toBe('Falta que firmes el envío');
+    expect(ESTADOS_RAMPA.filter(rampaTerminada)).toEqual(['completada', 'fallida', 'reembolsada', 'vencida']);
   });
 });
 

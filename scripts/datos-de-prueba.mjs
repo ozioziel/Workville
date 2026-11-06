@@ -414,6 +414,12 @@ async function crear() {
     else await emitirUsdc(config.token_id, emisor, ll.cuentas[c].publica, monto);
     console.log(`  ${c}: ${monto} USDC${activo ? '' : ' de prueba'}`);
   }
+  if (!activo) {
+    // La rampa simulada manda el USDC desde la caja (en tu PC la API la lee de .prueba-keys.json): con el token propio se le emite.
+    await friendbot(ll.extra.caja.publica);
+    await emitirUsdc(config.token_id, emisor, ll.extra.caja.publica, '1000');
+    console.log('  caja de la rampa simulada: 1000 USDC de prueba');
+  }
 
   paso('Cuentas (inicio de sesión con la firma de cada wallet)');
   const s = {};

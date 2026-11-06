@@ -358,7 +358,8 @@ El token se fija en el constructor del escrow, así que hace falta **un contrato
    ESCROW_V2_CONTRACT_ID=C…   # el nuevo
    PAYMENT_TOKEN_ID=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
    PAYMENT_ASSET=USDC
-   RAMPA_SIMULADA=no          # hasta que la rampa simulada use la wallet «caja»
+   RAMPA_PROVEEDOR=simulada   # o «ninguna»; la simulada necesita RAMPA_CAJA_LLAVE (docs/simulaciones.md)
+   RAMPA_CAJA_LLAVE=S…        # la wallet caja, con trustline y USDC del faucet
    ```
 
    y vuelve a ejecutar `bash deploy/deploy.sh`.

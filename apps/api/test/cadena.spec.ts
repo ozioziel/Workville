@@ -91,9 +91,27 @@ describe('configuración y revisión de mainnet', () => {
   });
 
   it('la rampa simulada solo existe en testnet', () => {
-    expect(leerConfiguracion({ ...ENV_BASE, RAMPA_SIMULADA: 'si' }).rampaSimulada).toEqual({ llaveEmisor: null });
+    expect(leerConfiguracion({ ...ENV_BASE, RAMPA_SIMULADA: 'si' }).rampaSimulada).toEqual({ llaveCaja: null, minimoCajaUsdc: 50 });
     expect(leerConfiguracion(ENV_BASE).rampaSimulada).toBeNull();
     expect(() => leerConfiguracion({ ...ENV_BASE, STELLAR_NETWORK: 'mainnet', RAMPA_SIMULADA: 'si' })).toThrow(/solo existe en testnet/);
+    expect(() => leerConfiguracion({ ...ENV_BASE, STELLAR_NETWORK: 'mainnet', RAMPA_PROVEEDOR: 'simulada' })).toThrow(/solo existe en testnet/);
+  });
+
+  it('la rampa se elige con RAMPA_PROVEEDOR (RAMPA_SIMULADA=si sigue sirviendo)', () => {
+    const caja = Keypair.random().secret();
+    const c = leerConfiguracion({ ...ENV_BASE, RAMPA_PROVEEDOR: 'simulada', RAMPA_CAJA_LLAVE: caja, RAMPA_CAJA_MINIMO: '20' });
+    expect(c.rampa).toBe('simulada');
+    expect(c.rampaSimulada).toEqual({ llaveCaja: caja, minimoCajaUsdc: 20 });
+    expect(leerConfiguracion({ ...ENV_BASE, RAMPA_SIMULADA: 'si' }).rampa).toBe('simulada');
+    expect(leerConfiguracion({ ...ENV_BASE, RAMPA_PROVEEDOR: 'ninguna' }).rampa).toBeNull();
+    expect(leerConfiguracion(ENV_BASE).rampa).toBeNull();
+    expect(() => leerConfiguracion({ ...ENV_BASE, RAMPA_PROVEEDOR: 'otra' })).toThrow(/simulada", "pollar" o "ninguna"/);
+    expect(() => leerConfiguracion({ ...ENV_BASE, RAMPA_PROVEEDOR: 'pollar' })).toThrow(/POLLAR_API_KEY/);
+    expect(leerConfiguracion({ ...ENV_BASE, RAMPA_PROVEEDOR: 'pollar', POLLAR_API_KEY: 'pk' }).rampa).toBe('pollar');
+    expect(() => leerConfiguracion({ ...ENV_BASE, RAMPA_PROVEEDOR: 'pollar', RAMPA_SIMULADA: 'si', POLLAR_API_KEY: 'pk' })).toThrow(/no van juntas/);
+    expect(() => leerConfiguracion({ ...ENV_BASE, RAMPA_CAJA_LLAVE: 'no-es-llave' })).toThrow(/RAMPA_CAJA_LLAVE/);
+    // La caja es una llave que manda USDC: en mainnet no puede estar.
+    expect(() => leerConfiguracion({ ...ENV_BASE, STELLAR_NETWORK: 'mainnet', RAMPA_CAJA_LLAVE: caja })).toThrow(/solo existe en testnet/);
   });
 
   it('en testnet no se exige nada; en mainnet sí', () => {

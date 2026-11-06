@@ -4,7 +4,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 
 | # | Parte | Estado | Dónde está |
 |---|---|---|---|
-| 1 | Pagar con el QR del banco (en un pedido o desde el saldo de arriba: «Recargar con el QR de tu banco») | 🟡 **Simulada** en testnet | `apps/api/src/rampas/`, `apps/web/src/ui/pagos/PagarConQr.tsx`, `apps/web/src/ui/pagos/Saldo.tsx`, `packages/shared/src/rampas.ts` |
+| 1 | Pagar con el QR del banco (en un pedido o desde el saldo de arriba: «Recargar con el QR de tu banco») | 🟡 **Simulada** en testnet: QR de mentira, USDC de Circle real (de testnet) desde una wallet caja | `apps/api/src/rampas/`, `apps/web/src/ui/pagos/PagarConQr.tsx`, `apps/web/src/ui/pagos/Saldo.tsx`, `packages/shared/src/rampas.ts` |
 | 2 | Pasar a mi banco (retiro) | 🟡 **Simulada** en testnet; con Pollar **no está hecha** | `apps/api/src/rampas/`, `apps/web/src/ui/panels/PanelRetiro.tsx` |
 | 3 | Rampa real con Pollar (QR del banco) | 🟠 **Programada, sin probar** | `apps/web/src/features/rampas/pollar.ts` |
 | 4 | Entrar con Google | 🔴 **Apagado** (`POLLAR_GOOGLE` vacío): programado con Pollar, pero en la prueba no funcionó | `apps/web/src/features/auth/pollar.ts`, `sesion.tsx`, `PanelBienvenida.tsx` |
@@ -24,15 +24,23 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 
 **Para qué:** quien no tiene USDC paga escaneando un QR con la app de su banco (QR Simple en Bolivia). Una rampa (proveedor de cambio con licencia) recibe los bolivianos y manda USDC a su wallet. Después la persona confirma el pago de siempre (garantía, etapas o directo). También se puede recargar sin un pedido: en el saldo de arriba → «Recargar con el QR de tu banco» (`PanelRecargar`), con la misma rampa simulada.
 
-**Qué es de mentira** (solo con `RAMPA_SIMULADA=si`, que la API rechaza en mainnet):
-- **El QR:** es un texto que empieza con `SIMULADO-WORKVILLE|QR-SIMPLE|…`. Ningún banco lo puede cobrar.
+**Qué es de mentira** (solo con `RAMPA_PROVEEDOR=simulada`, que la API rechaza en mainnet; `RAMPA_SIMULADA=si`, el nombre anterior, sigue sirviendo):
+- **El QR:** tiene el formato de un QR de cobro EMVCo como el **QR Simple** de los bancos de Bolivia (dinámico, en bolivianos, con monto, referencia y control CRC). Ningún banco lo puede cobrar: la red de pago (campo 26) es `BO.WORKVILLE.SIMULADO`, que no existe, el comercio se llama «WORKVILLE SIMULADO» y la nota dice «SIMULADO - NO PAGAR». Lo arma `qrRampaSimulada` en `packages/shared/src/rampas.ts`; `esQrSimulado` lo reconoce.
 - **El tipo de cambio:** fijo, **Bs 6,96 por dólar**, y una comisión de **1 %**. Están en `RAMPA_SIMULADA` de `packages/shared/src/rampas.ts`.
-- **El pago del banco:** el botón «Simular el pago desde el banco (solo pruebas)» hace de banco. La API emite USDC de prueba a la wallet de la persona con la llave del **emisor del USDC de prueba**. Esa llave sale de `RAMPA_SIMULADA_LLAVE` o, en tu PC, de `.seed-keys.json`.
-  - Esa llave tiene que ser la del admin del token de `PAYMENT_TOKEN_ID`. En un clon nuevo, `npm run setup` genera un `.seed-keys.json` con un emisor nuevo que no es el admin: pide la llave al equipo y ponla en `RAMPA_SIMULADA_LLAVE`.
-  - Si la red rechaza el `mint` sin emitir nada, la recarga vuelve a «esperando pago» y se puede reintentar; si no se sabe (sin red o sin confirmar), queda `fallida`.
-  - Es la **única** excepción a «el servidor nunca firma». Solo puede llamar a `mint` del token de pago, solo en testnet y solo con la rampa simulada encendida (`StellarService.emitirParaRampaSimulada`).
+- **El pago del banco:** el botón «Simular el pago desde el banco (solo pruebas)» hace de banco. La API manda USDC de testnet a la wallet de la persona **desde la wallet «caja»** (ver abajo).
+  - Antes de mandar revisa que la caja exista, acepte el USDC y tenga el monto, y que la wallet de la persona tenga la trustline. Si la caja no alcanza, responde «la rampa simulada se quedó sin USDC» (el problema no es de la persona).
+  - Si la red rechaza el envío sin mandar nada, la recarga vuelve a «esperando pago» y se puede reintentar; si no se sabe (sin red o sin confirmar), queda `fallida`.
+  - Es la **única** excepción a «el servidor nunca firma». Solo puede llamar a `transfer` del token de pago, desde la caja, solo en testnet y solo con la rampa simulada encendida (`StellarService.pagarDesdeCaja`).
 
-**Qué sí es real:** el USDC de prueba llega de verdad a la wallet, en testnet. Cada recarga queda en la tabla `rampas`, con su referencia y el hash de la transacción.
+**La caja de la rampa simulada:**
+- Es una wallet de testnet con trustline de USDC de Circle, llena desde el faucet (<https://faucet.circle.com>, red Stellar, Testnet). Manda el USDC de las recargas y **recibe el de los retiros**, así que se rellena sola en parte.
+- Su llave va en `RAMPA_CAJA_LLAVE` (solo en el `.env` del servidor; en mainnet la API no arranca si existe). En tu PC, si está vacía, la API usa la caja de `.prueba-keys.json` (`npm run datos:prueba`); con el token propio, ese script le emite 1000 USDC de prueba.
+- **Aviso de saldo bajo:** la API revisa el saldo al arrancar, cada 15 minutos y después de cada recarga o retiro. Si baja de `RAMPA_CAJA_MINIMO` (50 USDC si está vacía), lo escribe en el registro de la API con la dirección para llenarla, y `/api/health` lo muestra en `rampa_caja` (`saldo_usdc`, `baja`).
+- Cómo crear una caja: `stellar keys generate caja-workville --network testnet --fund`, abrirle la trustline (`stellar tx new change-trust --source caja-workville --network testnet --line USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`), pedir USDC en el faucet para su dirección y poner su llave en `RAMPA_CAJA_LLAVE`.
+
+**Estados (los de una orden de Pollar):** cada operación sigue los estados de una orden de rampa de Pollar (`RampOrder.state`), en español, para que la rampa simulada y la de Pollar se vean igual: `creada`, `esperando_pago`, `procesando`, `liquidando`, `completada`, `fallida`, `reembolsada`, y además `vencida` (el QR venció sin pago; Pollar lo informa como `failed`). La recarga va de `esperando_pago` (el QR) a `procesando` (el banco pagó), `liquidando` (sale el USDC) y `completada`. La equivalencia está en `ESTADO_RAMPA_DE_POLLAR` (`packages/shared/src/rampas.ts`).
+
+**Qué sí es real:** el USDC de testnet llega de verdad a la wallet. Cada recarga queda en la tabla `rampas`, con su referencia y el hash de la transacción.
 
 **Qué falta para que sea real:** ver la [parte 3](#3-rampa-real-con-pollar).
 
@@ -44,7 +52,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 - **El banco:** ninguno recibe dinero. La lista de bancos de Bolivia (`RAMPA_SIMULADA.bancos`) está escrita a mano.
 - **El cambio:** el mismo tipo de cambio y la misma comisión fijos de la parte 1.
 
-**Qué sí es real:** la persona firma con su wallet y manda el USDC de prueba de verdad (en testnet) a la dirección del emisor del USDC de prueba, que hace de rampa. La API lo verifica en la red. De la cuenta del banco solo se guardan los **últimos 4 dígitos**.
+**Qué sí es real:** la persona firma con su wallet y manda el USDC de testnet de verdad a la **caja**, que hace de rampa. La API lo verifica en la red y el retiro pasa a `completada` en el acto (el «banco» simulado paga al instante; con Pollar pasaría por `procesando`). De la cuenta del banco solo se guardan los **últimos 4 dígitos**.
 
 **Qué falta:**
 - Con Pollar, el retiro **no está programado**. Desde la 0.12 es una orden `OFFRAMP` (`getRampRoutes('OFFRAMP')`, `quoteRamp`, `createRampOrder`), con los datos bancarios que pida el proveedor (`rampQuoteFields` de la cotización, enviados como `payee`), la firma del tramo (`signRampLeg`) y su propio KYC.
@@ -52,7 +60,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 
 ## 3. Rampa real con Pollar
 
-`apps/web/src/features/rampas/pollar.ts` ya usa el SDK de Pollar 0.12, donde una rampa es una orden: `getRampRoutes('ONRAMP')`, `quoteRamp`, `createRampOrder` y `getRampOrder`. Se usa **solo en mainnet** (`servicios.rampa === 'pollar'`) y solo si la persona entró con Google o con el correo. **Nadie lo probó todavía.** Antes de usarlo:
+`apps/web/src/features/rampas/pollar.ts` ya usa el SDK de Pollar 0.12, donde una rampa es una orden: `getRampRoutes('ONRAMP')`, `quoteRamp`, `createRampOrder` y `getRampOrder`. Se usa con `RAMPA_PROVEEDOR=pollar` (en mainnet, también si está vacía y Pollar está encendido; `servicios.rampa === 'pollar'`) y solo si la persona entró con Google o con el correo. **Nadie lo probó todavía.** Antes de usarlo:
 
 1. **Confirmar con Pollar** que tiene rampa para **Bolivia (BOB)**. Con una sesión iniciada, `getRampRoutes('ONRAMP')` lo responde (una ruta `BO` con `rail: 'QR'` que entregue USDC en Stellar); sin sesión, la API de Pollar devuelve 401.
 2. **Confirmar que su forma de pago «QR» sirve con QR Simple** y qué bancos lo aceptan.
@@ -87,12 +95,12 @@ Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/pro
 - **KYC (Didit):** la app de Didit es la **sandbox**, que no cobra y no verifica de verdad. En mainnet se usa la app de producción (`ENTORNO_SERVICIOS=produccion`), que sí cobra por cada verificación.
 - **Cuentas «prueba-…»:** `npm run datos:prueba` las marca como verificadas directamente en la base local, para no pasar por Didit en cada prueba (menos prueba-kyc).
 - **USDC de testnet:** el USDC de Circle de testnet (sin valor; se pide en https://faucet.circle.com). El token propio `contracts/usdc-prueba` queda para tu PC. En mainnet, `PAYMENT_TOKEN_ID` es el contrato SAC del USDC real.
-- **Rampa simulada con el USDC de Circle:** no puede emitir ese token, así que en el servidor queda apagada hasta que reparta desde una wallet «caja» (la misma que usan los datos de prueba).
+- **Rampa simulada con el USDC de Circle:** nadie puede emitir ese token, así que la rampa simulada reparte desde la wallet caja (parte 1).
 - **Correos:** con `onboarding@resend.dev` solo llegan al correo de la cuenta de Resend. Para enviar a cualquiera hace falta un dominio propio verificado.
 - **Webhooks:** en tu PC no llegan; la app le pregunta a Didit y a Mux cómo va. En el servidor tienen que ir por HTTPS.
 - **Textos legales:** son ejemplos. Lo que necesita un abogado está en rojo con el aviso de siempre.
 
 ## Cómo apagar lo simulado
 
-- **Rampa simulada:** deja `RAMPA_SIMULADA` vacío. La opción del QR y «Pasar a mi banco» desaparecen.
-- **En mainnet:** la API **no arranca** con `RAMPA_SIMULADA=si` (lo revisan `leerConfiguracion` y `npm run mainnet:revisar`).
+- **Rampa simulada:** `RAMPA_PROVEEDOR=ninguna` (o vacía, sin `RAMPA_SIMULADA=si`). La opción del QR y «Pasar a mi banco» desaparecen.
+- **En mainnet:** la API **no arranca** con la rampa simulada ni con `RAMPA_CAJA_LLAVE` (lo revisan `leerConfiguracion` y `npm run mainnet:revisar`).
