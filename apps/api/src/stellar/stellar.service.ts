@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger, ServiceUnavailableExce
 import { ERRORES_CONTRATO, PASSPHRASE, activoDeNombreSac, type ActivoClasico } from '@cryptoville/shared';
 import { Account, Address, Asset, BASE_FEE, Contract, Keypair, Operation, TransactionBuilder, nativeToScVal, rpc, scValToNative, xdr, type Transaction } from '@stellar/stellar-sdk';
 import { CONFIGURACION, type Configuracion } from '../config/configuracion';
-import { codigoErrorContrato, contratoOrigenDelError, cuentaSinTrustline, hashDe, transaccionDeXdr, usdcRecibido } from './cadena';
+import { codigoErrorContrato, contratoOrigenDelError, cuentaSinTrustline, hashDe, transaccionDeXdr, usdcRecibido, usdcRecibidoEnEventos } from './cadena';
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -303,7 +303,12 @@ export class StellarService {
     const t = await this.esperar(hash, 3);
     if (t.status !== rpc.Api.GetTransactionStatus.SUCCESS) throw new BadRequestException('Esa transacción no está confirmada en la red');
     const tx = transaccionDeXdr(t.envelopeXdr.toXDR('base64'), this.passphrase);
-    return usdcRecibido(tx, destino, await this.activoDelToken(), this.config.stellar.tokenId);
+    const { tokenId } = this.config.stellar;
+    const porOperaciones = usdcRecibido(tx, destino, await this.activoDelToken(), tokenId);
+    // Los eventos del SAC ven también lo que llega por otro contrato (el puente CCTP) y el monto exacto de un
+    // «strict send». Son la misma llegada vista de dos formas: se toma la mayor, nunca la suma.
+    const porEventos = tokenId ? usdcRecibidoEnEventos(t.events?.contractEventsXdr.flat() ?? [], destino, tokenId) : 0n;
+    return porEventos > porOperaciones ? porEventos : porOperaciones;
   }
 
   /** Saldo del token de pago de una cuenta, en unidades (0 si no tiene la trustline del USDC). */

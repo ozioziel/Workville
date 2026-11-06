@@ -1,7 +1,7 @@
 // Pruebas unitarias sin red: cuánto USDC entrega una transacción (para verificar lo que dice la rampa de Pollar).
 import { PASSPHRASE, USDC_CIRCLE } from '@cryptoville/shared';
-import { Account, Address, Asset, BASE_FEE, Contract, Keypair, Operation, TransactionBuilder, nativeToScVal, type xdr } from '@stellar/stellar-sdk';
-import { usdcRecibido } from '../src/stellar/cadena';
+import { Account, Address, Asset, BASE_FEE, Contract, Keypair, Operation, TransactionBuilder, nativeToScVal, xdr } from '@stellar/stellar-sdk';
+import { usdcRecibido, usdcRecibidoEnEventos } from '../src/stellar/cadena';
 
 const ACTIVO = { codigo: USDC_CIRCLE.testnet.codigo, emisor: USDC_CIRCLE.testnet.emisor };
 const USDC = new Asset(ACTIVO.codigo, ACTIVO.emisor);
@@ -42,5 +42,42 @@ describe('usdcRecibido', () => {
     expect(usdcRecibido(tx(transfer(TOKEN, otro)), yo, ACTIVO, TOKEN)).toBe(0n);
     // Otro contrato con una función «transfer» no es el USDC.
     expect(usdcRecibido(tx(transfer(USDC_CIRCLE.mainnet.contrato, yo)), yo, ACTIVO, TOKEN)).toBe(0n);
+  });
+});
+
+describe('usdcRecibidoEnEventos', () => {
+  const yo = Keypair.random().publicKey();
+  const otro = Keypair.random().publicKey();
+  const ASSET = `${ACTIVO.codigo}:${ACTIVO.emisor}`;
+
+  function evento(contrato: string, topicos: xdr.ScVal[], dato: xdr.ScVal) {
+    return new xdr.ContractEvent({
+      ext: xdr.ExtensionPoint.v0(),
+      contractId: xdr.ContractId.fromXdrObject(Address.fromString(contrato).toBuffer()),
+      type: xdr.ContractEventType.contract,
+      body: xdr.ContractEventBody.v0(new xdr.ContractEventV0({ topics: topicos, data: dato })),
+    });
+  }
+  const sym = (s: string) => nativeToScVal(s, { type: 'symbol' });
+  const dir = (g: string) => new Address(g).toScVal();
+  const monto = (n: bigint) => nativeToScVal(n, { type: 'i128' });
+  const texto = nativeToScVal(ASSET, { type: 'string' });
+
+  it('cuenta el mint del puente (CCTP) y los transfer a la wallet, no los de otra ni de otro contrato', () => {
+    const eventos = [
+      evento(TOKEN, [sym('mint'), dir(yo), texto], monto(40_000_000n)),
+      evento(TOKEN, [sym('transfer'), dir(otro), dir(yo), texto], monto(5_000_000n)),
+      evento(TOKEN, [sym('transfer'), dir(yo), dir(otro), texto], monto(99_000_000n)),
+      evento(USDC_CIRCLE.mainnet.contrato, [sym('mint'), dir(yo), texto], monto(7_000_000n)),
+    ];
+    expect(usdcRecibidoEnEventos(eventos, yo, TOKEN)).toBe(45_000_000n);
+  });
+
+  it('lee el monto cuando el dato es un mapa (dirección muxed)', () => {
+    const mapa = xdr.ScVal.scvMap([
+      new xdr.ScMapEntry({ key: sym('amount'), val: monto(12_000_000n) }),
+      new xdr.ScMapEntry({ key: sym('to_muxed_id'), val: nativeToScVal(7n, { type: 'u64' }) }),
+    ]);
+    expect(usdcRecibidoEnEventos([evento(TOKEN, [sym('transfer'), dir(otro), dir(yo), texto], mapa)], yo, TOKEN)).toBe(12_000_000n);
   });
 });
