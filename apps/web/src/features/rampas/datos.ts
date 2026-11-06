@@ -80,7 +80,9 @@ export function registrarOrdenPollar(d: {
 
 /** Rampa con Pollar: avisa un cambio de estado. Al completarse va la transacción del USDC, que la API lee en la red. */
 export function avisarEstadoPollar(id: string, estado: string, txHash?: string | null): Promise<Rampa> {
-  return api<Rampa>(`/rampas/pollar/ordenes/${id}/estado`, { cuerpo: { estado, ...(txHash ? { tx_hash: txHash } : {}) } });
+  // La API guarda el hash en minúsculas (como los demás hashes de la app): si llega en mayúsculas, lo rechazaría.
+  const hash = txHash?.trim().toLowerCase();
+  return api<Rampa>(`/rampas/pollar/ordenes/${id}/estado`, { cuerpo: { estado, ...(hash ? { tx_hash: hash } : {}) } });
 }
 
 export function crearRetiro(datos: { monto_usdc: string; direccion: string; banco: string; cuenta: string }): Promise<Rampa> {
