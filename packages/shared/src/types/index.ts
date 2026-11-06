@@ -371,7 +371,8 @@ export type TipoAviso =
   | 'fase_entregada'
   | 'fase_liberada'
   | 'cambios_pedidos'
-  | 'pago_directo';
+  | 'pago_directo'
+  | 'contrato_cambiado';
 
 export interface Aviso {
   id: string;
