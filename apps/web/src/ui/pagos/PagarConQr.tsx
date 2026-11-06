@@ -1,12 +1,10 @@
 import { RAMPA_SIMULADA, cotizarRampaSimulada, etiquetaEstadoRampa, formatoUsdc } from '@cryptoville/shared';
-import { useEffect, useState } from 'react';
-import { clientePollar } from '../../features/auth/pollar';
+import { Suspense, lazy, useEffect, useState, type ComponentProps } from 'react';
 import { useSesion } from '../../features/auth/sesion';
 import { CanceladoPorUsuario } from '../../features/auth/wallet';
-import { crearRecargaPollar, estadoRecargaPollar, hayRampaBolivia, type RecargaPollar } from '../../features/rampas/pollar';
 import { avisarCambioDeSaldo, crearRecarga, faltaParaPagar, saldoUsdc, simularPagoDelBanco, type Rampa } from '../../features/rampas/datos';
 import { mensajeDeError } from '../../lib/api';
-import { obtenerConfig, servicios } from '../../lib/config';
+import { servicios } from '../../lib/config';
 import { Aviso, Copiar, fechaCorta } from '../components/basicos';
 import { Icono } from '../components/Iconos';
 
@@ -14,7 +12,7 @@ import { Icono } from '../components/Iconos';
  * «Pagar con el QR de tu banco»: para quien no tiene USDC. Pasa bolivianos a USDC con una rampa y,
  * cuando llega el USDC a su wallet, la persona confirma el pago de siempre (garantía, etapas o directo).
  * - Rampa simulada (testnet): el QR es de mentira y hay un botón para simular el pago del banco.
- * - Rampa de Pollar (mainnet): el QR lo da el proveedor de cambio. SIN PROBAR (docs/simulaciones.md).
+ * - Rampa de Pollar: el QR (o la transferencia) lo da el proveedor de cambio. SIN PROBAR con dinero real (docs/simulaciones.md).
  */
 export function PagarConQr({ montoUsdc, pedidoId, onAcreditada }: { montoUsdc: string; pedidoId?: string; onAcreditada?: () => void }) {
   const rampa = servicios().rampa;
@@ -45,7 +43,13 @@ export function PagarConQr({ montoUsdc, pedidoId, onAcreditada }: { montoUsdc: s
       ) : rampa === 'simulada' ? (
         <RecargaSimulada montoUsdc={faltaParaPagar(montoUsdc, alcanza ? '0' : saldo ?? null)} direccion={direccion} pedidoId={pedidoId} onAcreditada={onAcreditada} />
       ) : (
-        <RecargaConPollar montoUsdc={faltaParaPagar(montoUsdc, alcanza ? '0' : saldo ?? null)} direccion={direccion} esPollar={firmante?.metodo === 'pollar'} onAcreditada={onAcreditada} />
+        <RecargaConPollar
+          montoUsdc={faltaParaPagar(montoUsdc, alcanza ? '0' : saldo ?? null)}
+          direccion={direccion}
+          esPollar={firmante?.metodo === 'pollar'}
+          pedidoId={pedidoId}
+          onAcreditada={onAcreditada}
+        />
       )}
     </div>
   );
@@ -137,71 +141,13 @@ export function RecargaSimulada({ montoUsdc, direccion, pedidoId, onAcreditada }
   );
 }
 
-/** SIN PROBAR: rampa real de Pollar (mainnet). Necesita haber entrado con Google o con el correo. */
-export function RecargaConPollar({ montoUsdc, direccion, esPollar, onAcreditada }: { montoUsdc: string; direccion: string; esPollar: boolean; onAcreditada?: () => void }) {
-  const [recarga, setRecarga] = useState<RecargaPollar | null>(null);
-  const [ocupado, setOcupado] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const PantallaPollar = lazy(() => import('./RecargaConPollar'));
 
-  useEffect(() => {
-    if (!recarga || recarga.estado === 'completed' || recarga.estado === 'failed') return;
-    const id = setInterval(() => {
-      void (async () => {
-        const c = await clientePollar(servicios().pollar_api_key!, obtenerConfig().red);
-        const r = await estadoRecargaPollar(c, recarga.txId);
-        setRecarga(r);
-        if (r.estado === 'completed') onAcreditada?.();
-      })().catch(() => undefined);
-    }, 10_000);
-    return () => clearInterval(id);
-  }, [recarga, onAcreditada]);
-
-  if (!esPollar) return <Aviso tipo="info">Para pagar con el QR de tu banco, entra con Google o con tu correo.</Aviso>;
-
-  const empezar = async () => {
-    setError(null);
-    setOcupado(true);
-    try {
-      const c = await clientePollar(servicios().pollar_api_key!, obtenerConfig().red);
-      const bolivia = await hayRampaBolivia(c);
-      if (!bolivia) throw new Error('Todavía no hay un proveedor de cambio para Bolivia.');
-      // El proveedor cotiza en la moneda local: se pide el equivalente aproximado y él da el monto exacto.
-      const aproximado = Number(cotizarRampaSimulada('entrada', montoUsdc).monto_local);
-      setRecarga(await crearRecargaPollar(c, aproximado, bolivia.moneda, direccion));
-    } catch (e) {
-      setError(mensajeDeError(e));
-    } finally {
-      setOcupado(false);
-    }
-  };
-
-  if (!recarga) {
-    return (
-      <div className="pila-compacta">
-        <button type="button" className="boton boton-primario" disabled={ocupado} onClick={empezar}>
-          {ocupado ? 'Pidiendo el QR…' : 'Ver el QR para pagar desde mi banco'}
-        </button>
-        {error && <Aviso tipo="peligro">{error}</Aviso>}
-      </div>
-    );
-  }
+/** Rampa con Pollar: se carga aparte porque trae el SDK de Pollar. */
+export function RecargaConPollar(props: ComponentProps<typeof PantallaPollar>) {
   return (
-    <div className="pila-compacta qr-pago">
-      {recarga.kycUrl && (
-        <a className="boton" href={recarga.kycUrl} target="_blank" rel="noreferrer">
-          Verifica tu identidad con el proveedor de cambio <Icono nombre="enlace" tamano={14} />
-        </a>
-      )}
-      {recarga.qr && 'svg' in recarga.qr && <span className="qr-imagen" role="img" aria-label="Código QR para pagar desde el banco" dangerouslySetInnerHTML={{ __html: recarga.qr.svg }} />}
-      {recarga.qr && 'src' in recarga.qr && <img className="qr-imagen" src={recarga.qr.src} alt="Código QR para pagar desde el banco" />}
-      {recarga.campos.map((c) => (
-        <span key={c.etiqueta} className="pequeno">
-          {c.etiqueta}: <strong>{c.valor}</strong> {c.copiable && <Copiar texto={c.valor} />}
-        </span>
-      ))}
-      <span className="tenue pequeno">
-        {recarga.estado === 'completed' ? '¡Listo! Ya tienes tus USDC: confirma el pago con el botón de arriba.' : 'Esperando tu pago desde el banco…'}
-      </span>
-    </div>
+    <Suspense fallback={<span className="tenue pequeno">Cargando…</span>}>
+      <PantallaPollar {...props} />
+    </Suspense>
   );
 }
