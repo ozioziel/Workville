@@ -1,5 +1,5 @@
 ---
-version: 2026-10-07
+version: 2026-11-06
 ---
 # Términos y condiciones
 
@@ -12,6 +12,7 @@ Estos términos explican cómo funciona WorkVille y qué puedes esperar de nosot
 - WorkVille es una plataforma donde las personas ofrecen servicios («Quiero contratar») y publican lo que necesitan («Quiero trabajar»).
 - Los pagos se hacen en la red de Stellar ({{red}}). WorkVille no es un banco ni guarda tu dinero: el dinero en garantía lo guarda un contrato inteligente que solo puede pagarle al proveedor o devolverle al cliente.
 - WorkVille no presta los servicios publicados: los prestan las personas que los ofrecen.
+- WorkVille no cambia dinero. Cuando pagas con el QR de tu banco o pasas USDC a tu banco, el cambio lo hace Pollar o la entidad con licencia con la que trabaja, con sus propios términos. WorkVille no recibe tus bolivianos.
 
 > [!ABOGADO] Revisar si la actividad requiere registro o licencia en el país (por ejemplo, como proveedor de servicios de activos virtuales) y cómo se describe la custodia del contrato.
 
@@ -19,8 +20,11 @@ Estos términos explican cómo funciona WorkVille y qué puedes esperar de nosot
 
 - Entras con tu wallet o con tu correo. La cuenta es la persona: puedes sumar varias wallets, pero no crear varias cuentas.
 - Para abrir un local, cobrar y dejar reseñas tienes que verificar tu identidad (KYC), si el servidor lo tiene encendido.
-- Eres responsable de tus llaves y de tu wallet. Si pierdes tu llave, WorkVille no puede recuperarla.
-- Si entras con tu correo, tu wallet la guarda el proveedor de cuentas (Pollar). WorkVille nunca tiene tus llaves.
+- Tus fondos están siempre en tu wallet (o en el contrato, mientras un pago está en garantía). WorkVille nunca tiene tus llaves ni puede mover tu dinero.
+- **Si entras con tu wallet,** la llave la guardas tú. Si la pierdes, WorkVille no puede recuperarla.
+- **Si entras con tu correo,** Pollar guarda tu llave cifrada; tus fondos están en tu wallet, no en Pollar ni en WorkVille. Cada pago lo confirmas tú en la app.
+
+> [!ABOGADO] Revisar cómo se describe la custodia de la llave por Pollar y qué pasa si la persona pierde el acceso a su correo.
 
 > [!ABOGADO] Definir la edad mínima para usar la app y qué pasa con la cuenta si se infringen estos términos (suspensión, cierre, aviso previo).
 
