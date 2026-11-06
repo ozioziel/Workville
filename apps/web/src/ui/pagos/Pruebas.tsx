@@ -191,9 +191,9 @@ export function Pruebas({
               </button>
             ))}
           </div>
-          <input className="campo" maxLength={120} placeholder="Título (por ejemplo: Boceto del logo)" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          <input aria-label="Título de la prueba" className="campo" maxLength={120} placeholder="Título (por ejemplo: Boceto del logo)" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
           {tipo === 'enlace' ? (
-            <input className="campo" type="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
+            <input aria-label="Enlace de la prueba" className="campo" type="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
           ) : (
             <input
               type="file"
