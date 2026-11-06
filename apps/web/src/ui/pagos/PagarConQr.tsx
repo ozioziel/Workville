@@ -1,4 +1,4 @@
-import { ETIQUETA_ESTADO_RAMPA, RAMPA_SIMULADA, cotizarRampaSimulada, formatoUsdc } from '@cryptoville/shared';
+import { RAMPA_SIMULADA, cotizarRampaSimulada, etiquetaEstadoRampa, formatoUsdc } from '@cryptoville/shared';
 import { useEffect, useState } from 'react';
 import { clientePollar } from '../../features/auth/pollar';
 import { useSesion } from '../../features/auth/sesion';
@@ -99,12 +99,12 @@ export function RecargaSimulada({ montoUsdc, direccion, pedidoId, onAcreditada }
   const montoLocal = Number(recarga.monto_local).toFixed(2);
   return (
     <div className="pila-compacta qr-pago">
-      <strong>{recarga.estado === 'acreditada' ? '¡Listo! Ya tienes tus USDC' : `Escanea con la app de tu banco: Bs ${montoLocal}`}</strong>
+      <strong>{recarga.estado === 'completada' ? '¡Listo! Ya tienes tus USDC' : `Escanea con la app de tu banco: Bs ${montoLocal}`}</strong>
       {recarga.estado === 'esperando_pago' && recarga.qr_payload && <QrDeTexto texto={recarga.qr_payload} />}
       <span className="pequeno">
         Referencia <code>{recarga.referencia}</code> <Copiar texto={recarga.referencia} />
       </span>
-      <span className="tenue pequeno">{ETIQUETA_ESTADO_RAMPA[recarga.estado]}{recarga.estado === 'esperando_pago' ? ` · vence ${fechaCorta(recarga.expira_en)}` : ''}</span>
+      <span className="tenue pequeno">{etiquetaEstadoRampa('entrada', recarga.estado)}{recarga.estado === 'esperando_pago' ? ` · vence ${fechaCorta(recarga.expira_en)}` : ''}</span>
       {recarga.estado === 'esperando_pago' && (
         <button
           type="button"
@@ -114,7 +114,7 @@ export function RecargaSimulada({ montoUsdc, direccion, pedidoId, onAcreditada }
             intentar(async () => {
               const r = await simularPagoDelBanco(recarga.id);
               setRecarga(r);
-              if (r.estado === 'acreditada') {
+              if (r.estado === 'completada') {
                 avisarCambioDeSaldo();
                 onAcreditada?.();
               }
@@ -124,10 +124,10 @@ export function RecargaSimulada({ montoUsdc, direccion, pedidoId, onAcreditada }
           {ocupado ? 'El banco está pagando…' : 'Simular el pago desde el banco (solo pruebas)'}
         </button>
       )}
-      {recarga.estado === 'acreditada' && (
+      {recarga.estado === 'completada' && (
         <span className="pequeno">Llegaron {formatoUsdc(recarga.monto_usdc)} USDC a tu wallet. Ahora confirma el pago con el botón de arriba.</span>
       )}
-      {(recarga.estado === 'vencida' || recarga.estado === 'fallida') && (
+      {(recarga.estado === 'vencida' || recarga.estado === 'fallida' || recarga.estado === 'reembolsada') && (
         <button type="button" className="boton boton-chico" onClick={() => setRecarga(null)}>
           Armar otro QR
         </button>
