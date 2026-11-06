@@ -157,7 +157,9 @@ function AntesDePagar({ pedido, rol, metodo, fases, onListo }: { pedido: PedidoD
   const [comentario, setComentario] = useState('');
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setPlan(aPlan(fases)), [fases]);
-  const pendiente = metodo === 'etapas' && !pedido.plan_aceptado_en;
+  // Si una fecha del plan aceptado pasó sin que se pagara, el contrato ya no lo acepta: el proveedor lo corrige.
+  const fechaPasada = metodo === 'etapas' && Boolean(pedido.plan_aceptado_en) && fases.some((f) => Date.parse(f.fecha_limite) <= Date.now());
+  const pendiente = metodo === 'etapas' && (!pedido.plan_aceptado_en || fechaPasada);
   const accion = async (ruta: string, cuerpo: unknown, texto: string) => {
     setError(null);
     try {
@@ -175,6 +177,7 @@ function AntesDePagar({ pedido, rol, metodo, fases, onListo }: { pedido: PedidoD
           <strong>El cliente pidió cambios:</strong> {pedido.plan_comentario}
         </Aviso>
       )}
+      {fechaPasada && <Aviso tipo="aviso">Una fecha del plan ya pasó antes del pago: el proveedor tiene que mandar fechas nuevas y tú aceptarlas otra vez.</Aviso>}
       {metodo === 'etapas' && <h4>Plan de fases</h4>}
       <EditorPlan plan={plan} monto={pedido.monto_usdc} onCambiar={pendiente && rol === 'proveedor' ? setPlan : undefined} />
       {pendiente && rol === 'proveedor' && (
@@ -182,7 +185,7 @@ function AntesDePagar({ pedido, rol, metodo, fases, onListo }: { pedido: PedidoD
           Enviar el plan corregido
         </button>
       )}
-      {pendiente && rol === 'cliente' && (
+      {pendiente && !fechaPasada && rol === 'cliente' && (
         <>
           <button type="button" className="boton boton-primario" onClick={() => accion(`/pedidos/${pedido.id}/plan/aceptar`, {}, 'Aceptaste el plan')}>
             Aceptar el plan
@@ -201,7 +204,7 @@ function AntesDePagar({ pedido, rol, metodo, fases, onListo }: { pedido: PedidoD
           </details>
         </>
       )}
-      {pendiente && rol === 'proveedor' && !pedido.plan_comentario && <p className="tenue pequeno">Esperando que el cliente acepte el plan.</p>}
+      {pendiente && !fechaPasada && rol === 'proveedor' && !pedido.plan_comentario && <p className="tenue pequeno">Esperando que el cliente acepte el plan.</p>}
       {!pendiente && rol === 'cliente' && (
         <div className="paso-lab">
           <p>
