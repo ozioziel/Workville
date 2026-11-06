@@ -227,7 +227,7 @@ cryptoville/
 - **Pruebas** (`pruebas`): archivos (bucket privado `pruebas`, con URL firmada), enlaces o videos de **Mux** con reproducción firmada. Al entregar, la huella del paquete (`textoHuellaEntrega`) va al contrato y las pruebas quedan selladas.
 - **Expediente:** plan, pruebas, chat e historial de cada pedido, para las partes y el árbitro.
 - **Disputas:** el panel del árbitro lista las del v1 (`disputas`) y las de las fases del v2 (en `fases`), con la fecha desde la que cualquiera puede repartir 50/50.
-- **Pagar con el QR del banco y pasar a mi banco (rampas):** para quien no tiene USDC. Una rampa cambia bolivianos por USDC (y al revés). Cada operación queda en `rampas` (RLS: la persona y el árbitro). En testnet la rampa es **simulada** (`RAMPA_SIMULADA=si`): el QR es de mentira y la API emite USDC de prueba; en mainnet es la de Pollar. Detalle en [simulaciones.md](simulaciones.md).
+- **Pagar con el QR del banco y pasar a mi banco (rampas):** para quien no tiene USDC. Una rampa cambia bolivianos por USDC (y al revés). Cada operación queda en `rampas` (RLS: la persona y el árbitro). La rampa se elige con `RAMPA_PROVEEDOR`. En testnet puede ser **simulada** (`RAMPA_PROVEEDOR=simulada`): el QR es de mentira y la API manda USDC de Circle de testnet desde una wallet caja (`RAMPA_CAJA_LLAVE`), que también recibe los retiros; en mainnet es la de Pollar. Los estados son los de una orden de Pollar. Detalle en [simulaciones.md](simulaciones.md).
 - Detalle del contrato para el auditor: [contrato-v2.md](contrato-v2.md).
 
 ### Villa y comunidad
@@ -306,7 +306,7 @@ cryptoville/
 | `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`, `MUX_WEBHOOK_SECRET`, `MUX_SIGNING_KEY_ID`, `MUX_SIGNING_KEY_PRIVATE` | Videos |
 | `RESEND_API_KEY`, `CORREO_REMITENTE` | Correos de aviso |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACTO` | Notificaciones del navegador |
-| `RAMPA_SIMULADA`, `RAMPA_SIMULADA_LLAVE` | Solo testnet: la rampa simulada del QR del banco y la llave del emisor del USDC de prueba (si falta, la de `.seed-keys.json`) |
+| `RAMPA_PROVEEDOR`, `RAMPA_CAJA_LLAVE`, `RAMPA_CAJA_MINIMO` | Qué rampa hay (`simulada`, `pollar` o `ninguna`; `RAMPA_SIMULADA=si` es el nombre anterior). Solo testnet: la llave de la caja de la rampa simulada (si falta, la de `.prueba-keys.json`) y el saldo por debajo del cual se avisa |
 
 Plantillas: `.env.example`, `.env.local.example` y `.env.mainnet.example`. Qué falta para mainnet: [mainnet.md](mainnet.md).
 

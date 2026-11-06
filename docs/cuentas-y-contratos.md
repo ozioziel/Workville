@@ -47,6 +47,7 @@ Solo de desarrollo: el v2 `CD2ARGTBC4XVTDVPO5VX6WNV4QVFPR7DK6SMEJGF32DZJBKJ7ZUIS
 | **Admin** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` | Despliegues, subida de código, `set_*`, `pausar`, `proponer_actualizacion` | Stellar CLI de la Mac del equipo, alias `cryptoville-admin` |
 | **Árbitro** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` (la misma que el admin) | `resolver` en las disputas | La misma (`cryptoville-admin`). Va en `ARBITRO_DIRECCION` |
 | **Tesorería** | `GDOHGHXACDYJOLMITRYYN5CNBFEB2XPLA6UCTFBSD4YXV4ZLR7YRILOX` | Nada en el contrato: solo **recibe** las comisiones y los pagos de locales extra. Trustline de USDC de Circle abierta | Stellar CLI de la Mac del equipo, alias `tesoreria-workville`. Va en `TESORERIA_DIRECCION` |
+| **Caja de la rampa simulada** | `GCTVRHQMVPXZYAN2W2W56NPNQCVYMF43EICZSGYPCIIVW544DE3WEY44` | Solo `transfer` del USDC hacia quien recarga con el QR simulado (`StellarService.pagarDesdeCaja`). Recibe los retiros. Trustline de USDC de Circle abierta; se llena en el faucet | Stellar CLI de la Mac del equipo, alias `caja-workville`. Va en `RAMPA_CAJA_LLAVE` |
 | **Mantenimiento** | `GBCUMUAUO4YTCSO45Z7YIJ4ARSI57FGNB3S3D23PW3JPD5LHXYQMPO7L` | Solo vencimientos y `extender` del v2 (`StellarService.firmarMantenimiento`). Necesita XLM, no USDC | `LLAVE_MANTENIMIENTO` en el `.env` del VPS |
 | **Cada persona** | Su wallet (Freighter, WalletConnect o Pollar) | Sus pagos, entregas, liberaciones, disputas y la trustline de USDC | En su wallet. El servidor nunca la tiene |
 
@@ -55,7 +56,7 @@ Cuentas que ya no se usan:
 | Rol | Dirección | Por qué |
 |---|---|---|
 | Tesorería anterior | `GBHEFQZJZ46BVPSCJF34WOI3B2SA2YN2NW2XNYY42JPRWT4PY45ZNGY4` | Nadie del equipo tiene su llave, así que no se le pudo abrir la trustline de USDC de Circle |
-| Emisor del USDC de prueba | `GDYPKRVHHPD6CDPSX4B7YUG6SUZCHZV7R2ZXVQ4SKHQPJLONZ4CRZ73U` | Firmaba el `mint` de la rampa simulada (`RAMPA_SIMULADA_LLAVE`). El USDC de Circle no se puede emitir: la rampa simulada repartirá desde una wallet caja (PR 5) |
+| Emisor del USDC de prueba | `GDYPKRVHHPD6CDPSX4B7YUG6SUZCHZV7R2ZXVQ4SKHQPJLONZ4CRZ73U` | Firmaba el `mint` de la rampa simulada (`RAMPA_SIMULADA_LLAVE`). El USDC de Circle no se puede emitir: la rampa simulada reparte desde la caja |
 
 Riesgos que quedan para mainnet:
 - **Admin y árbitro son la misma cuenta**, y es una sola llave. El PR 8 los pasa a cuentas multifirma distintas.
@@ -63,7 +64,7 @@ Riesgos que quedan para mainnet:
 
 ## Variables del servidor
 
-Lo que cambia en el `.env` del VPS al usar el contrato nuevo, junto con el PR 5 o con `RAMPA_SIMULADA=no`, porque la rampa simulada no puede emitir USDC de Circle:
+El `.env` del VPS con el contrato nuevo (aplicado el 6 nov 2026; la rampa simulada vuelve con la caja):
 
 ```dotenv
 ESCROW_CONTRACT_ID=
@@ -71,8 +72,11 @@ ESCROW_V2_CONTRACT_ID=CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO
 PAYMENT_TOKEN_ID=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
 PAYMENT_ASSET=USDC
 TESORERIA_DIRECCION=GDOHGHXACDYJOLMITRYYN5CNBFEB2XPLA6UCTFBSD4YXV4ZLR7YRILOX
-RAMPA_SIMULADA=no
+RAMPA_PROVEEDOR=simulada
+RAMPA_CAJA_LLAVE=S…   # la llave de la caja (no va en el repo)
 ```
+
+`RAMPA_SIMULADA` y `RAMPA_SIMULADA_LLAVE` ya no hacen falta: se pueden borrar del `.env`.
 
 `ARBITRO_DIRECCION`, `COMISION_BPS=300` y `PLAZO_REVISION_SEG=259200` no cambian. Al arrancar, la API compara estos valores con el `config()` del contrato.
 
@@ -86,7 +90,7 @@ La base guarda hashes de transacciones de los contratos viejos. **No hay que bor
 | Pedidos terminados o cancelados | v1: 5 cancelados · v2: 1 liberado y 1 cancelado | Se leen igual que antes. No tienen acciones pendientes, así que nada llama al contrato nuevo por ellos |
 | Pedidos v2 sin pagar (`solicitado` o `aceptado`) | 7 | Siguen normal: al pagar, el dinero va al **contrato nuevo** en USDC de Circle. La columna `contrato` dice `v2`, no una dirección, y el número de pedido nunca existió en el contrato nuevo |
 | Pedidos v1 abiertos | 0 | Los 5 que quedaban (3 `aceptado` y 2 `solicitado`, de octubre y sin pago) se cancelaron el 5 nov 2026 directo en la base, sin aviso a las partes. Sin el v1 configurado ya no se habrían podido pagar |
-| Recargas de la rampa simulada (`rampas`) | 6 | Historial del USDC de prueba. Las nuevas usarán la wallet caja (PR 5) |
+| Recargas de la rampa simulada (`rampas`) | 6 | Historial del USDC de prueba. La migración `20261106000100_rampa_estados_pollar` pasa sus estados a los nombres nuevos (`acreditada` → `completada`). Las nuevas salen de la caja |
 | Transacciones preparadas | 6 | Vencidas (duran minutos). No se pueden enviar contra el contrato nuevo porque su hash ya no coincide |
 | Pagos de locales extra y trabajos públicos | 0 | Nada que hacer |
 | Avance del sincronizador (`sincronizacion_cadena`) | Una fila por contrato | La clave lleva la dirección (`escrow-v2:<C…>`), así que el contrato nuevo empieza su propia fila desde el ledger actual. Las filas viejas quedan sin uso |
