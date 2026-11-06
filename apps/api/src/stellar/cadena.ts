@@ -1,6 +1,7 @@
 // Funciones puras para leer y armar llamadas a los contratos (sin conexión a la red).
 // Las usa StellarService y se prueban sin red en test/cadena.spec.ts.
-import { Address, FeeBumpTransaction, TransactionBuilder, nativeToScVal, scValToNative, xdr, type Transaction } from '@stellar/stellar-sdk';
+import { usdcAUnidades } from '@cryptoville/shared';
+import { Address, Asset, FeeBumpTransaction, TransactionBuilder, nativeToScVal, scValToNative, xdr, type Transaction } from '@stellar/stellar-sdk';
 
 /** Una llamada a un contrato dentro de una transacción. */
 export interface Invocacion {
@@ -31,6 +32,29 @@ export function invocacionDe(tx: Transaction): Invocacion | null {
     args: llamada.args.map((a: xdr.ScVal) => scValToNative(a)),
     fuente: op.source ?? tx.source,
   };
+}
+
+/**
+ * Unidades del USDC (7 decimales) que la transacción manda a `destino`: pagos, pagos con ruta (lo que se
+ * asegura que llega) y `transfer` del contrato del token. Sirve para comprobar que una rampa entregó lo que
+ * dice, sin creerle a nadie. `activo` es el USDC clásico detrás del SAC (null si el token no es un SAC).
+ */
+export function usdcRecibido(tx: Transaction, destino: string, activo: { codigo: string; emisor: string } | null, tokenId: string | null): bigint {
+  const esUsdc = (a: Asset) => Boolean(activo) && !a.isNative() && a.getCode() === activo!.codigo && a.getIssuer() === activo!.emisor;
+  let total = 0n;
+  for (const op of tx.operations) {
+    if (op.type === 'payment' && op.destination === destino && esUsdc(op.asset)) total += BigInt(usdcAUnidades(op.amount));
+    else if (op.type === 'pathPaymentStrictReceive' && op.destination === destino && esUsdc(op.destAsset)) total += BigInt(usdcAUnidades(op.destAmount));
+    // Con «strict send» lo exacto queda en el resultado; aquí se cuenta el mínimo que la red garantiza.
+    else if (op.type === 'pathPaymentStrictSend' && op.destination === destino && esUsdc(op.destAsset)) total += BigInt(usdcAUnidades(op.destMin));
+    else if (op.type === 'invokeHostFunction' && tokenId && op.func.type === 'hostFunctionTypeInvokeContract') {
+      const llamada = op.func.invokeContract;
+      if (Address.fromScAddress(llamada.contractAddress).toString() !== tokenId || llamada.functionName.toString() !== 'transfer') continue;
+      const [, a, monto] = llamada.args.map((v: xdr.ScVal) => scValToNative(v) as unknown);
+      if (a === destino && typeof monto === 'bigint' && monto > 0n) total += monto;
+    }
+  }
+  return total;
 }
 
 export function invocacionDeSobre(sobre: xdr.TransactionEnvelope, passphrase: string): Invocacion | null {

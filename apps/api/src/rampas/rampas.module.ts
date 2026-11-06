@@ -5,6 +5,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  HttpCode,
   HttpException,
   Inject,
   Injectable,
@@ -21,9 +22,21 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { FAUCET_USDC_TESTNET, RAMPA_SIMULADA, cotizarRampaSimulada, qrRampaSimulada, unidadesAUsdc, usdcAUnidades, type SentidoRampa } from '@cryptoville/shared';
+import {
+  FAUCET_USDC_TESTNET,
+  RAMPA_SIMULADA,
+  cotizarRampaSimulada,
+  estadoRampaDePollar,
+  paisRampa,
+  qrRampaSimulada,
+  rampaTerminada,
+  unidadesAUsdc,
+  usdcAUnidades,
+  type EstadoRampa,
+  type SentidoRampa,
+} from '@cryptoville/shared';
 import { Keypair } from '@stellar/stellar-sdk';
-import { IsIn, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
+import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -95,6 +108,63 @@ class SalidaDto {
   cuenta: string;
 }
 
+/** Monto en la moneda local como lo da el proveedor (se guarda con 2 decimales). */
+const MONTO_LOCAL = /^(?!0+(\.0+)?$)\d{1,14}(\.\d{1,8})?$/;
+/** Estado de una orden de Pollar (`RampOrder.state`): created, awaiting_payment, processing… */
+const ESTADO_POLLAR = /^[a-z_]{3,40}$/;
+
+class OrdenPollarDto {
+  /** Id de la orden de Pollar (`RampOrder.id`). Se guarda como la referencia de la operación. */
+  @Matches(/^[A-Za-z0-9_-]{6,80}$/, { message: 'Id de orden de Pollar inválido' })
+  orden_id: string;
+
+  /** Por ahora solo recargas: el retiro al banco con Pollar llega en el PR del retiro. */
+  @IsIn(['entrada'])
+  sentido: SentidoRampa;
+
+  @Matches(DIRECCION, { message: 'La dirección debe empezar con G y tener 56 caracteres' })
+  direccion: string;
+
+  @Matches(/^[A-Z]{2}$/, { message: 'País inválido (2 letras)' })
+  pais: string;
+
+  @Matches(/^[A-Z]{3}$/, { message: 'Moneda inválida (3 letras)' })
+  moneda: string;
+
+  /** USDC que la cotización dice que llegan (el de verdad se lee en la red al completarse). */
+  @Matches(MONTO_USDC, { message: 'Monto inválido (USDC mayor que 0, hasta 7 decimales)' })
+  monto_usdc: string;
+
+  /** Lo que paga la persona en su moneda. */
+  @Matches(MONTO_LOCAL, { message: 'Monto en moneda local inválido' })
+  monto_local: string;
+
+  @IsOptional()
+  @Matches(/^\d{1,14}(\.\d{1,8})?$/, { message: 'Comisión inválida' })
+  comision_local?: string;
+
+  @Matches(ESTADO_POLLAR, { message: 'Estado de la orden inválido' })
+  estado: string;
+
+  @IsOptional()
+  @IsISO8601()
+  expira_en?: string;
+
+  @IsOptional()
+  @IsUUID('4')
+  pedido_id?: string;
+}
+
+class EstadoPollarDto {
+  @Matches(ESTADO_POLLAR, { message: 'Estado de la orden inválido' })
+  estado: string;
+
+  /** Al completarse: la transacción con la que llegó el USDC (el último tramo de la orden). */
+  @IsOptional()
+  @Matches(/^[0-9a-f]{64}$/, { message: 'El hash de la transacción son 64 caracteres hexadecimales' })
+  tx_hash?: string;
+}
+
 /**
  * Rampas: bolivianos → USDC («pagar con el QR del banco») y USDC → cuenta del banco («pasar a mi banco»).
  * La rampa se elige con RAMPA_PROVEEDOR (`simulada`, `pollar` o `ninguna`).
@@ -140,6 +210,10 @@ export class RampasService implements OnModuleInit, OnModuleDestroy {
         this.proveedor === 'pollar' ? 'Esta operación se hace con tu cuenta de Pollar, desde la app' : 'El pago con el QR del banco todavía no está disponible en este servidor',
       );
     }
+  }
+
+  private exigirPollar(): void {
+    if (this.proveedor !== 'pollar') throw new ServiceUnavailableException('La rampa con Pollar no está encendida en este servidor');
   }
 
   private validarMonto(monto: string): void {
@@ -265,15 +339,20 @@ export class RampasService implements OnModuleInit, OnModuleDestroy {
     return r;
   }
 
+  /** La wallet que recibe es de la cuenta y, si la recarga es para un pedido, la persona es su cliente. */
+  private async exigirRecargaPropia(yo: Usuario, direccion: string, pedidoId?: string): Promise<void> {
+    if (!(await esWalletDe(this.prisma, yo, direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta');
+    if (pedidoId) {
+      const pedido = await this.prisma.pedido.findUnique({ where: { id: pedidoId }, select: { cliente_id: true } });
+      if (!pedido || pedido.cliente_id !== yo.id) throw new ForbiddenException('Solo el cliente del pedido puede recargar para pagarlo');
+    }
+  }
+
   /** Recarga: la persona ve un QR con el monto en bolivianos y lo paga desde su banco. */
   async crearEntrada(yo: Usuario, dto: EntradaDto): Promise<Rampa> {
     this.exigirSimulada();
     this.validarMonto(dto.monto_usdc);
-    if (!(await esWalletDe(this.prisma, yo, dto.direccion))) throw new ForbiddenException('Esa wallet no es de tu cuenta');
-    if (dto.pedido_id) {
-      const pedido = await this.prisma.pedido.findUnique({ where: { id: dto.pedido_id }, select: { cliente_id: true } });
-      if (!pedido || pedido.cliente_id !== yo.id) throw new ForbiddenException('Solo el cliente del pedido puede recargar para pagarlo');
-    }
+    await this.exigirRecargaPropia(yo, dto.direccion, dto.pedido_id);
     const c = cotizarRampaSimulada('entrada', dto.monto_usdc);
     const referencia = this.referencia();
     return this.prisma.rampa.create({
@@ -340,6 +419,71 @@ export class RampasService implements OnModuleInit, OnModuleDestroy {
       await this.prisma.rampa.update({ where: { id }, data: { estado: sinMandar ? 'esperando_pago' : 'fallida' } });
       throw e;
     }
+  }
+
+  /**
+   * Rampa con Pollar: la web ya creó la orden con el SDK de Pollar (con la sesión de la persona) y la registra aquí
+   * para el historial y para verificar después el USDC en la red. La misma orden da siempre la misma fila.
+   */
+  async registrarOrdenPollar(yo: Usuario, dto: OrdenPollarDto): Promise<Rampa> {
+    this.exigirPollar();
+    const pais = paisRampa(dto.pais);
+    if (!pais || !this.config.rampaPaises.includes(pais.pais)) throw new BadRequestException('Ese país no tiene rampa en este servidor');
+    if (pais.moneda !== dto.moneda) throw new BadRequestException(`La moneda de ${pais.nombre} es ${pais.moneda}`);
+    const existente = await this.prisma.rampa.findUnique({ where: { referencia: dto.orden_id } });
+    if (existente) {
+      if (existente.usuario_id !== yo.id) throw new ForbiddenException('Esa orden no es tuya');
+      return existente;
+    }
+    await this.exigirRecargaPropia(yo, dto.direccion, dto.pedido_id);
+    const local = Number(dto.monto_local);
+    // Una orden recién creada no puede estar completa: eso se registra con su transacción (actualizarOrdenPollar).
+    const estado = estadoRampaDePollar(dto.estado);
+    return this.prisma.rampa.create({
+      data: {
+        usuario_id: yo.id,
+        sentido: 'entrada',
+        proveedor: 'pollar',
+        pais: pais.pais,
+        moneda: pais.moneda,
+        monto_usdc: dto.monto_usdc,
+        monto_local: local.toFixed(2),
+        tipo_cambio: (local / Number(dto.monto_usdc)).toFixed(6),
+        comision_local: Number(dto.comision_local ?? 0).toFixed(2),
+        direccion: dto.direccion,
+        pedido_id: dto.pedido_id ?? null,
+        estado: estado === 'completada' ? 'liquidando' : estado,
+        referencia: dto.orden_id,
+        expira_en: dto.expira_en ? new Date(dto.expira_en) : new Date(Date.now() + 60 * 60_000),
+      },
+    });
+  }
+
+  /**
+   * La web sigue la orden con el SDK de Pollar y avisa cada cambio de estado. Un estado final no cambia más.
+   * «Completada» necesita la transacción con la que llegó el USDC: la API la lee en la red y guarda lo que de
+   * verdad llegó a la wallet (no lo que dice la orden).
+   */
+  async actualizarOrdenPollar(yo: Usuario, id: string, dto: EstadoPollarDto): Promise<Rampa> {
+    this.exigirPollar();
+    const r = await this.propia(yo, id);
+    if (r.proveedor !== 'pollar') throw new BadRequestException('Esa operación no es de la rampa con Pollar');
+    if (rampaTerminada(r.estado as EstadoRampa)) return r;
+    const estado = estadoRampaDePollar(dto.estado);
+    if (estado !== 'completada') {
+      return r.estado === estado ? r : this.prisma.rampa.update({ where: { id }, data: { estado } });
+    }
+    if (!dto.tx_hash) throw new BadRequestException('Falta la transacción con la que llegó el USDC');
+    const usada = await this.prisma.rampa.findUnique({ where: { tx_hash: dto.tx_hash }, select: { id: true } });
+    if (usada && usada.id !== id) throw new ConflictException('Esa transacción ya se registró en otra operación');
+    let monto = r.monto_usdc.toFixed(7);
+    if (this.stellar.verifica) {
+      const unidades = await this.stellar.usdcRecibidoEn(dto.tx_hash, r.direccion);
+      if (unidades === 0n) throw new BadRequestException('Esa transacción no mandó USDC a tu wallet');
+      monto = unidadesAUsdc(unidades);
+    }
+    this.log.log(`Recarga con Pollar ${r.referencia}: llegaron ${monto} USDC a ${r.direccion.slice(0, 6)}…`);
+    return this.prisma.rampa.update({ where: { id }, data: { estado: 'completada', tx_hash: dto.tx_hash, monto_usdc: monto } });
   }
 
   /** Retiro: la persona elige banco y cuenta; después firma el envío del USDC a la rampa. */
@@ -424,6 +568,19 @@ export class RampasController {
   @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10_000 : 10, ttl: 60_000 } })
   async simularPago(@UsuarioActual() yo: Usuario, @Param('id', ParseUUIDPipe) id: string) {
     return serializar(await this.rampas.simularPagoBancario(yo, id));
+  }
+
+  /** Rampa con Pollar: registrar la orden que la web creó con el SDK de Pollar. */
+  @Post('pollar/ordenes')
+  async ordenPollar(@UsuarioActual() yo: Usuario, @Body() dto: OrdenPollarDto) {
+    return serializar(await this.rampas.registrarOrdenPollar(yo, dto));
+  }
+
+  /** Rampa con Pollar: un cambio de estado de la orden (al completarse, con la transacción del USDC). */
+  @Post('pollar/ordenes/:id/estado')
+  @HttpCode(200)
+  async estadoPollar(@UsuarioActual() yo: Usuario, @Param('id', ParseUUIDPipe) id: string, @Body() dto: EstadoPollarDto) {
+    return serializar(await this.rampas.actualizarOrdenPollar(yo, id, dto));
   }
 
   @Post('salidas')

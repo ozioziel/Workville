@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger, ServiceUnavailableExce
 import { ERRORES_CONTRATO, PASSPHRASE, activoDeNombreSac, type ActivoClasico } from '@cryptoville/shared';
 import { Account, Address, Asset, BASE_FEE, Contract, Keypair, Operation, TransactionBuilder, nativeToScVal, rpc, scValToNative, xdr, type Transaction } from '@stellar/stellar-sdk';
 import { CONFIGURACION, type Configuracion } from '../config/configuracion';
-import { codigoErrorContrato, contratoOrigenDelError, cuentaSinTrustline, hashDe, transaccionDeXdr } from './cadena';
+import { codigoErrorContrato, contratoOrigenDelError, cuentaSinTrustline, hashDe, transaccionDeXdr, usdcRecibido } from './cadena';
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -293,6 +293,17 @@ export class StellarService {
     const tx = TransactionBuilder.fromXDR(sinFirmar, this.passphrase) as Transaction;
     tx.sign(par);
     return { hash: hashDe(tx), confirmada: await this.enviar(tx.toXDR()) };
+  }
+
+  /**
+   * Unidades del USDC que una transacción confirmada mandó a `destino` (0 si no le mandó nada). Así se comprueba
+   * lo que dice una rampa externa (Pollar) sin creerle: lo que cuenta es lo que está en la red.
+   */
+  async usdcRecibidoEn(hash: string, destino: string): Promise<bigint> {
+    const t = await this.esperar(hash, 3);
+    if (t.status !== rpc.Api.GetTransactionStatus.SUCCESS) throw new BadRequestException('Esa transacción no está confirmada en la red');
+    const tx = transaccionDeXdr(t.envelopeXdr.toXDR('base64'), this.passphrase);
+    return usdcRecibido(tx, destino, await this.activoDelToken(), this.config.stellar.tokenId);
   }
 
   /** Saldo del token de pago de una cuenta, en unidades (0 si no tiene la trustline del USDC). */

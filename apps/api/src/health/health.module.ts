@@ -83,6 +83,8 @@ export class HealthController {
         push_publica: sv.push?.publica ?? null,
         /** Pagar con el QR del banco / pasar al banco: 'simulada' (solo testnet), 'pollar' (mainnet) o null. */
         rampa: proveedorRampa(this.config),
+        /** Rampa con Pollar: países donde se ofrece (códigos ISO, por ejemplo ["BO"]). */
+        rampa_paises: this.config.rampaPaises,
         entorno: this.config.entornoServicios,
       },
     };

@@ -39,6 +39,8 @@ export interface ConfigPublica {
     entorno: 'pruebas' | 'produccion';
     /** Pagar con el QR del banco / pasar al banco: 'simulada' (solo testnet), 'pollar' (mainnet) o null. */
     rampa?: 'simulada' | 'pollar' | null;
+    /** Rampa con Pollar: países donde se ofrece (por ejemplo ["BO"]). */
+    rampa_paises?: string[];
   };
 }
 

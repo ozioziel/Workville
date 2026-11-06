@@ -21,6 +21,7 @@ for (const variable of [
   'RAMPA_SIMULADA',
   'RAMPA_PROVEEDOR',
   'RAMPA_CAJA_LLAVE',
+  'RAMPA_POLLAR_PAISES',
   'RAMPA_SIMULADA_LLAVE',
 ]) {
   process.env[variable] = '';
