@@ -42,7 +42,7 @@ Por qué así:
 El script solo muestra lo que haría si no le pasas `--aplicar`, y no toca una cuenta que ya está bien:
 
 ```bash
-MULTIFIRMA_ADMIN_SECRETA=$(stellar keys secret cryptoville-admin) \
+MULTIFIRMA_ADMIN_SECRETA=$(stellar keys secret admin-workville) \
 MULTIFIRMA_ARBITRO_SECRETA=$(stellar keys secret arbitro-workville) \
 FIRMANTE_OZIOZIEL=$(stellar keys address firmante-ozioziel) \
 FIRMANTE_DANIEL=$(stellar keys address firmante-daniel69zz) \

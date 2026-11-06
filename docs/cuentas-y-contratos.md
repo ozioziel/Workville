@@ -14,7 +14,7 @@ Quién firma qué en WorkVille y qué contratos existen en la red. Todo está en
 | Hash del `.wasm` | `cfe13944529114870d798f29e09364da4832337154e30f119f0a140575e862f6` |
 | `source_repo` | `github:ozioziel/Workville` (attestation de GitHub encontrada) |
 | Configuración | comisión 300 bps (3 %), directo 100 bps (1 %), revisión 259200 s (3 días), disputa 1209600 s (14 días), sin tope, sin pausa |
-| Desplegado | 5 nov 2026, por `cryptoville-admin`. Subida del código: tx `cb0b3159cf1e88e3d806c14c0f3ad6f5eeb4d89a4d3e8747ee06ec6cb95c7b4d` |
+| Desplegado | 5 nov 2026, por `admin-workville`. Subida del código: tx `cb0b3159cf1e88e3d806c14c0f3ad6f5eeb4d89a4d3e8747ee06ec6cb95c7b4d` |
 
 Para comprobarlo:
 
@@ -44,7 +44,7 @@ Solo de desarrollo: el v2 `CD2ARGTBC4XVTDVPO5VX6WNV4QVFPR7DK6SMEJGF32DZJBKJ7ZUIS
 
 | Rol | Dirección | Qué firma | Dónde está la llave |
 |---|---|---|---|
-| **Admin** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` | `set_*`, `pausar`, `proponer_actualizacion`. Multifirma **2 de 3**: ozioziel, daniel69zz y respaldo | Cada firmante en su wallet; la llave propia (`cryptoville-admin`) quedó con peso 0 y ya no firma |
+| **Admin** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` | `set_*`, `pausar`, `proponer_actualizacion`. Multifirma **2 de 3**: ozioziel, daniel69zz y respaldo | Cada firmante en su wallet; la llave propia (alias `admin-workville`, antes `cryptoville-admin`) quedó con peso 0 y ya no firma |
 | **Árbitro** del v2 | `GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB` | `resolver` en las disputas. Multifirma **1 de 2**: ozioziel y daniel69zz | Cada firmante en su wallet; la llave propia (`arbitro-workville`) quedó con peso 0. Va en `ARBITRO_DIRECCION` |
 | **Firmantes** | ozioziel `GDSYZQEJ6O4IPHYC2SUP5X45EZJ2LJ2TFFQ7HPFE7DJB2XDNZYAJZKMS`, daniel69zz `GDOKY3XXVVHOGLQJUJIOIOWUG2Y5G3LTKUXL7OBAARGCMO5BKBN3P7KT`, respaldo `GALX6JTIXXOHYL4PQF7A2DSXEF24FYECEDPR4PGIV65TOPU3KRAZ5AFR` | Firman como admin (2 de 3) y como árbitro (1 de 2; el respaldo no) | Alias `firmante-ozioziel`, `firmante-daniel69zz` y `firmante-respaldo`; cada uno la importa en su wallet. El respaldo se guarda offline |
 | **Tesorería** | `GDOHGHXACDYJOLMITRYYN5CNBFEB2XPLA6UCTFBSD4YXV4ZLR7YRILOX` | Nada en el contrato: solo **recibe** las comisiones y los pagos de locales extra. Trustline de USDC de Circle abierta | Stellar CLI de la Mac del equipo, alias `tesoreria-workville`. Va en `TESORERIA_DIRECCION` |
