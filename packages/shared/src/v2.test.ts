@@ -24,6 +24,7 @@ import {
   textoHuellaEntrega,
   validarPlan,
   vencioParaAccion,
+  aTiempoParaAccion,
   type EstadoFase,
   type PlanFase,
 } from './index.js';
@@ -95,6 +96,18 @@ describe('acciones sobre las fases', () => {
     expect(vencioParaAccion('cobrar_por_vencimiento', entregada, plazos, AHORA + 3 * DIA + 1)).toBe(true);
     expect(vencioParaAccion('reembolsar_por_vencimiento', entregada, plazos, AHORA + DIA + 1)).toBe(true);
     expect(Object.keys(ACCIONES_FASE)).toHaveLength(8);
+  });
+
+  it('entregar y pedir cambios tienen plazo, como en el contrato', () => {
+    const plazos = { revisionSeg: 3 * 86_400 };
+    const enCurso = { fecha_limite: new Date(AHORA + DIA).toISOString(), entregada_en: null, cambios: 0 };
+    expect(aTiempoParaAccion('entregar_fase', enCurso, plazos, 2, AHORA)).toBe(true);
+    expect(aTiempoParaAccion('entregar_fase', enCurso, plazos, 2, AHORA + DIA + 1)).toBe(false);
+    const entregada = { ...enCurso, entregada_en: new Date(AHORA).toISOString() };
+    expect(aTiempoParaAccion('pedir_cambios', entregada, plazos, 2, AHORA + 2 * DIA)).toBe(true);
+    expect(aTiempoParaAccion('pedir_cambios', entregada, plazos, 2, AHORA + 3 * DIA + 1)).toBe(false);
+    expect(aTiempoParaAccion('pedir_cambios', { ...entregada, cambios: 2 }, plazos, 2, AHORA)).toBe(false);
+    expect(aTiempoParaAccion('liberar_fase', entregada, plazos, 2, AHORA + 30 * DIA)).toBe(true);
   });
 
   it('la huella de la entrega depende de cada prueba, y se exigen las pruebas pactadas', () => {

@@ -4,6 +4,7 @@ import {
   FASES_FINALES,
   NOMBRE_PRUEBA,
   pruebasQueFaltan,
+  aTiempoParaAccion,
   puedeHacerEnFase,
   vencioParaAccion,
   type AccionFase,
@@ -387,7 +388,9 @@ function DetalleFase({
   const acciones = (Object.keys(ACCIONES_FASE) as AccionFase[]).filter(
     (a) =>
       puedeHacerEnFase(a, estados, fase.numero, rol) &&
-      (ACCIONES_FASE[a].actor !== 'cualquiera' || vencioParaAccion(a, fase, plazos)),
+      (ACCIONES_FASE[a].actor !== 'cualquiera' || vencioParaAccion(a, fase, plazos)) &&
+      // Entregar fuera de fecha o pedir cambios de más: el contrato lo rechazaría, así que no se ofrece.
+      aTiempoParaAccion(a, fase, plazos, reglas().fases.cambiosPorFase),
   );
   const finRevision = fase.entregada_en ? new Date(Date.parse(fase.entregada_en) + plazos.revisionSeg * 1000) : null;
 
