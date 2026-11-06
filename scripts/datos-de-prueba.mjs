@@ -4,7 +4,7 @@
 //   npm run datos:prueba -- --llaves   1) genera las llaves y muestra las direcciones para desplegar el contrato v2
 //   npm run datos:prueba               2) crea todo (con la API corriendo: npm run dev)
 //   npm run datos:prueba -- --borrar   borra solo las cuentas «prueba-…» (conserva las llaves)
-//   npm run datos:prueba -- --arbitro  da el rol de árbitro a la cuenta que entró con la wallet de ARBITRO_DIRECCION
+//   npm run datos:prueba -- --arbitro  da el rol de árbitro a quien entró con la wallet de ARBITRO_DIRECCION o de uno de sus firmantes
 //
 // - Las llaves van a .prueba-keys.json (ignorado por git). Solo sirven en testnet.
 // - Los pedidos se crean DE VERDAD en el contrato v2 de testnet: el script hace de wallet de cada cuenta
@@ -296,14 +296,29 @@ Listo: ${path.relative(raiz, ARCHIVO_LLAVES)} (solo testnet, no se sube a git).
 // --arbitro
 // ---------------------------------------------------------------
 
-/** Da el rol de árbitro a la cuenta que tiene la wallet del árbitro del contrato (si ya entró una vez en la app). */
-async function rolDelArbitroDelContrato(db, direccion) {
+/** Firmantes con peso de una cuenta (si es multifirma, como el árbitro del contrato). */
+async function firmantesDe(direccion, red) {
+  const horizon = red === 'mainnet' ? 'https://horizon.stellar.org' : 'https://horizon-testnet.stellar.org';
+  const r = await fetch(`${horizon}/accounts/${direccion}`).catch(() => null);
+  if (!r?.ok) return [direccion];
+  const { signers } = await r.json();
+  return signers.filter((f) => f.type === 'ed25519_public_key' && f.weight > 0).map((f) => f.key);
+}
+
+/**
+ * Da el rol de árbitro a las cuentas que pueden firmar como el árbitro del contrato (si ya entraron una vez en la app):
+ * la que tiene la wallet del árbitro o, si el árbitro es una multifirma, la de cada firmante.
+ */
+async function rolDelArbitroDelContrato(db, direccion, red) {
+  const wallets = [...new Set([direccion, ...(await firmantesDe(direccion, red))])];
   const { rows } = await db.query(
-    `UPDATE usuarios SET rol = 'arbitro' WHERE id IN (SELECT usuario_id FROM wallets WHERE direccion = $1) OR direccion = $1 RETURNING nombre`,
-    [direccion],
+    `UPDATE usuarios SET rol = 'arbitro' WHERE id IN (SELECT usuario_id FROM wallets WHERE direccion = ANY($1::text[])) OR direccion = ANY($1::text[]) RETURNING nombre`,
+    [wallets],
   );
-  if (rows.length) console.log(`  ✓ Rol de árbitro para «${rows[0].nombre ?? direccion}» (la wallet del árbitro del contrato).`);
-  else console.warn(`  ⚠ Nadie entró todavía con la wallet del árbitro (${direccion}). Entra con ella en la app y corre: npm run datos:prueba -- --arbitro`);
+  for (const r of rows) console.log(`  ✓ Rol de árbitro para «${r.nombre}» (puede firmar como el árbitro del contrato).`);
+  if (!rows.length) {
+    console.warn(`  ⚠ Nadie entró todavía con una wallet que firme como el árbitro (${wallets.join(', ')}). Entra con ella en la app y corre: npm run datos:prueba -- --arbitro`);
+  }
   return rows.length > 0;
 }
 
@@ -314,7 +329,7 @@ async function soloArbitro() {
   if (!config.arbitro) throw new Error('Falta ARBITRO_DIRECCION en el .env.');
   const db = new pg.Client({ connectionString: process.env.DIRECT_URL });
   await db.connect();
-  const listo = await rolDelArbitroDelContrato(db, config.arbitro);
+  const listo = await rolDelArbitroDelContrato(db, config.arbitro, config.red);
   await db.end();
   if (!listo) process.exitCode = 1;
 }
@@ -436,7 +451,7 @@ async function crear() {
   // Con Didit encendido, abrir un local, cobrar y reseñar piden la identidad verificada. Las cuentas de prueba
   // quedan verificadas de mentira (solo en la base local), menos prueba-kyc: con ella se prueba esa pantalla.
   await db.query(`UPDATE usuarios SET verificado = true WHERE id = ANY($1::uuid[])`, [CUENTAS.filter((c) => c !== 'prueba-kyc').map((c) => s[c].id)]);
-  if (!arbitroEsDePrueba) await rolDelArbitroDelContrato(db, config.arbitro);
+  if (!arbitroEsDePrueba) await rolDelArbitroDelContrato(db, config.arbitro, config.red);
 
   paso('Locales y servicios');
   const P = s['prueba-proveedor'];

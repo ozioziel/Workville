@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { FUNCIONES_V2, type FuncionV2 } from '@cryptoville/shared';
 import { rpc, scValToNative } from '@stellar/stellar-sdk';
+import { AvisosService } from '../avisos/avisos.service';
 import { CONFIGURACION, type Configuracion } from '../config/configuracion';
 import { Prisma } from '../generated/prisma/client';
 import { RecordatoriosService } from '../notificaciones/recordatorios.module';
@@ -10,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { arg, invocacionDeSobre } from '../stellar/cadena';
 import { ContratoV2Service } from '../stellar/contrato-v2.service';
 import { StellarService } from '../stellar/stellar.service';
+import { EVENTO_CONFIG, diferenciasConEnv, textoCambioDeConfig, type ConfigActualizada } from './config-contrato';
 import { SincronizadorService } from './sincronizador.service';
 
 const DIA = 86_400_000;
@@ -25,6 +27,7 @@ const RENOVAR_CADA_DIAS = 20;
  *    corresponde, así nadie pierde por no haber entrado a tiempo.
  * 3. Renueva los pedidos en curso (`extender`) para que sus datos no caduquen.
  * 4. Pago directo: si el cliente no confirma en el plazo de revisión, el pedido se da por terminado.
+ * 5. Si el admin cambia la configuración del contrato, vuelve a leer los plazos y avisa al equipo.
  * También suma los recordatorios de las fases (vence la entrega, vence la revisión).
  */
 @Injectable()
@@ -38,6 +41,7 @@ export class MantenimientoV2Service implements OnModuleInit {
     private readonly pagos: PagosService,
     private readonly sincronizador: SincronizadorService,
     private readonly recordatorios: RecordatoriosService,
+    private readonly avisos: AvisosService,
     @Inject(CONFIGURACION) private readonly config: Configuracion,
   ) {}
 
@@ -58,6 +62,7 @@ export class MantenimientoV2Service implements OnModuleInit {
 
   private async aplicarEvento(evento: rpc.Api.EventResponse): Promise<void> {
     const nombre = scValToNative(evento.topic[0]);
+    if (nombre === EVENTO_CONFIG) return this.configActualizada(evento);
     if (!['pedido_creado', 'fase_cambio', 'pago_directo'].includes(String(nombre)) || evento.topic.length < 2) return;
     const numero = BigInt(scValToNative(evento.topic[1]) as bigint);
     const fila = await this.prisma.pedido.findUnique({ where: { numero }, select: { id: true, contrato: true, es_ejemplo: true } });
@@ -77,6 +82,18 @@ export class MantenimientoV2Service implements OnModuleInit {
       this.log.warn(`Pedido #${numero}: "${funcion}" no se registró (${String((e as Error).message).slice(0, 140)}); se sincroniza el estado`);
       await this.pagos.sincronizar(fila.id).catch(() => undefined);
     }
+  }
+
+  /** El admin (multifirma, desde Stellar Lab) cambió la configuración del contrato. */
+  private async configActualizada(evento: rpc.Api.EventResponse): Promise<void> {
+    const config = scValToNative(evento.value) as ConfigActualizada;
+    await this.contratoV2.refrescar();
+    const diferencias = diferenciasConEnv(config, this.config.stellar);
+    const texto = textoCambioDeConfig(config, diferencias);
+    if (diferencias.length || config.pausado) this.log.warn(`${texto} (tx ${evento.txHash})`);
+    else this.log.log(`${texto} (tx ${evento.txHash})`);
+    const equipo = await this.prisma.usuario.findMany({ where: { rol: 'arbitro' }, select: { id: true } });
+    for (const persona of equipo) await this.avisos.crear(persona.id, 'contrato_cambiado', texto);
   }
 
   /** Vencimientos que ya se pueden ejecutar (solo con la llave de mantenimiento). */

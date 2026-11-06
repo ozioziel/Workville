@@ -58,6 +58,7 @@ export function FirmarEnApp({
 }) {
   const { walletParaFirmar, firmarTransaccion } = useSesion();
   const { avisar } = useEstado();
+  const config = obtenerConfig();
   const [etapa, setEtapa] = useState<Etapa>('listo');
   const [error, setError] = useState<string | null>(null);
 
@@ -66,12 +67,15 @@ export function FirmarEnApp({
     const cargando = avisar(`${etiqueta}: armando la transacción…`, 'cargando');
     try {
       setEtapa('armando');
-      const direccion = await walletParaFirmar();
+      const wallet = await walletParaFirmar();
+      // El árbitro es una cuenta multifirma: la transacción sale de esa cuenta y la firma la wallet
+      // de uno de sus firmantes (la red revisa que tenga peso suficiente).
+      const direccion = accion === 'resolver' && config.arbitro ? config.arbitro : wallet;
       const preparada = await api<{ id: string; xdr: string }>('/transacciones/preparar', {
         cuerpo: { tipo, pedido_id: pedidoId, accion, direccion, ...extra },
       });
       setEtapa('firmando');
-      const firmada = await firmarTransaccion(preparada.xdr, direccion);
+      const firmada = await firmarTransaccion(preparada.xdr, wallet);
       setEtapa('enviando');
       await api('/transacciones/enviar', { cuerpo: { id: preparada.id, xdr_firmado: firmada } });
       avisar(`Listo: ${etiqueta.toLowerCase()} (verificado en la red)`, 'exito', cargando);

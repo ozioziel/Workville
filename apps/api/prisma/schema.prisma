@@ -93,6 +93,8 @@ enum TipoAviso {
   fase_liberada
   cambios_pedidos
   pago_directo
+  /// El admin cambió la configuración del contrato (evento ConfigActualizada).
+  contrato_cambiado
 }
 
 /// Estado de un «Se busca».

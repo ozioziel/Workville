@@ -2,7 +2,7 @@
 
 Quién firma qué en WorkVille y qué contratos existen en la red. Todo está en **testnet**. Aquí solo van direcciones públicas: las llaves secretas **nunca** se escriben en el repo, solo se dice dónde están.
 
-Última revisión: 5 de noviembre de 2026, al pasar al USDC de Circle.
+Última revisión: 6 de noviembre de 2026, al pasar el admin y el árbitro a multifirmas ([multifirma.md](multifirma.md)).
 
 ## Contrato en uso
 
@@ -14,7 +14,7 @@ Quién firma qué en WorkVille y qué contratos existen en la red. Todo está en
 | Hash del `.wasm` | `cfe13944529114870d798f29e09364da4832337154e30f119f0a140575e862f6` |
 | `source_repo` | `github:ozioziel/Workville` (attestation de GitHub encontrada) |
 | Configuración | comisión 300 bps (3 %), directo 100 bps (1 %), revisión 259200 s (3 días), disputa 1209600 s (14 días), sin tope, sin pausa |
-| Desplegado | 5 nov 2026, por `cryptoville-admin`. Subida del código: tx `cb0b3159cf1e88e3d806c14c0f3ad6f5eeb4d89a4d3e8747ee06ec6cb95c7b4d` |
+| Desplegado | 5 nov 2026, por `admin-workville`. Subida del código: tx `cb0b3159cf1e88e3d806c14c0f3ad6f5eeb4d89a4d3e8747ee06ec6cb95c7b4d` |
 
 Para comprobarlo:
 
@@ -44,8 +44,9 @@ Solo de desarrollo: el v2 `CD2ARGTBC4XVTDVPO5VX6WNV4QVFPR7DK6SMEJGF32DZJBKJ7ZUIS
 
 | Rol | Dirección | Qué firma | Dónde está la llave |
 |---|---|---|---|
-| **Admin** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` | Despliegues, subida de código, `set_*`, `pausar`, `proponer_actualizacion` | Stellar CLI de la Mac del equipo, alias `cryptoville-admin` |
-| **Árbitro** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` (la misma que el admin) | `resolver` en las disputas | La misma (`cryptoville-admin`). Va en `ARBITRO_DIRECCION` |
+| **Admin** del v2 | `GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU` | `set_*`, `pausar`, `proponer_actualizacion`. Multifirma **2 de 3**: ozioziel, daniel69zz y respaldo | Cada firmante en su wallet; la llave propia (alias `admin-workville`, antes `cryptoville-admin`) quedó con peso 0 y ya no firma |
+| **Árbitro** del v2 | `GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB` | `resolver` en las disputas. Multifirma **1 de 2**: ozioziel y daniel69zz | Cada firmante en su wallet; la llave propia (`arbitro-workville`) quedó con peso 0. Va en `ARBITRO_DIRECCION` |
+| **Firmantes** | ozioziel `GDSYZQEJ6O4IPHYC2SUP5X45EZJ2LJ2TFFQ7HPFE7DJB2XDNZYAJZKMS`, daniel69zz `GDOKY3XXVVHOGLQJUJIOIOWUG2Y5G3LTKUXL7OBAARGCMO5BKBN3P7KT`, respaldo `GALX6JTIXXOHYL4PQF7A2DSXEF24FYECEDPR4PGIV65TOPU3KRAZ5AFR` | Firman como admin (2 de 3) y como árbitro (1 de 2; el respaldo no) | Alias `firmante-ozioziel`, `firmante-daniel69zz` y `firmante-respaldo`; cada uno la importa en su wallet. El respaldo se guarda offline |
 | **Tesorería** | `GDOHGHXACDYJOLMITRYYN5CNBFEB2XPLA6UCTFBSD4YXV4ZLR7YRILOX` | Nada en el contrato: solo **recibe** las comisiones y los pagos de locales extra. Trustline de USDC de Circle abierta | Stellar CLI de la Mac del equipo, alias `tesoreria-workville`. Va en `TESORERIA_DIRECCION` |
 | **Caja de la rampa simulada** | `GCTVRHQMVPXZYAN2W2W56NPNQCVYMF43EICZSGYPCIIVW544DE3WEY44` | Solo `transfer` del USDC hacia quien recarga con el QR simulado (`StellarService.pagarDesdeCaja`). Recibe los retiros. Trustline de USDC de Circle abierta; se llena en el faucet | Stellar CLI de la Mac del equipo, alias `caja-workville`. Va en `RAMPA_CAJA_LLAVE` |
 | **Mantenimiento** | `GBCUMUAUO4YTCSO45Z7YIJ4ARSI57FGNB3S3D23PW3JPD5LHXYQMPO7L` | Solo vencimientos y `extender` del v2 (`StellarService.firmarMantenimiento`). Necesita XLM, no USDC | `LLAVE_MANTENIMIENTO` en el `.env` del VPS |
@@ -59,7 +60,7 @@ Cuentas que ya no se usan:
 | Emisor del USDC de prueba | `GDYPKRVHHPD6CDPSX4B7YUG6SUZCHZV7R2ZXVQ4SKHQPJLONZ4CRZ73U` | Firmaba el `mint` de la rampa simulada (`RAMPA_SIMULADA_LLAVE`). El USDC de Circle no se puede emitir: la rampa simulada reparte desde la caja |
 
 Riesgos que quedan para mainnet:
-- **Admin y árbitro son la misma cuenta**, y es una sola llave. El PR 8 los pasa a cuentas multifirma distintas.
+- **Árbitro 1 de 2:** cualquiera de los dos resuelve solo. Para mainnet debería ser 2 de 3 con alguien externo, y la app tendría que manejar transacciones firmadas a medias ([multifirma.md](multifirma.md)).
 - **Las llaves de admin y tesorería están en una sola Mac.** Hay que guardar una copia segura fuera de ella (gestor de contraseñas del equipo).
 
 ## Variables del servidor
@@ -78,7 +79,13 @@ RAMPA_CAJA_LLAVE=S…   # la llave de la caja (no va en el repo)
 
 `RAMPA_SIMULADA` y `RAMPA_SIMULADA_LLAVE` ya no hacen falta: se pueden borrar del `.env`.
 
-`ARBITRO_DIRECCION`, `COMISION_BPS=300` y `PLAZO_REVISION_SEG=259200` no cambian. Al arrancar, la API compara estos valores con el `config()` del contrato.
+Con las multifirmas (6 nov 2026) cambia el árbitro:
+
+```dotenv
+ARBITRO_DIRECCION=GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB
+```
+
+`COMISION_BPS=300` y `PLAZO_REVISION_SEG=259200` no cambian. Al arrancar en mainnet, la API compara estos valores con el `config()` del contrato. En testnet lo avisa el sincronizador cuando el admin cambia algo.
 
 ## Qué pasa con lo que ya está en Supabase
 
