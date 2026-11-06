@@ -11,6 +11,8 @@ import {
   Logger,
   Module,
   NotFoundException,
+  type OnModuleDestroy,
+  type OnModuleInit,
   Param,
   ParseUUIDPipe,
   Post,
@@ -19,17 +21,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { RAMPA_SIMULADA, cotizarRampaSimulada, qrRampaSimulada, unidadesAUsdc, usdcAUnidades, type SentidoRampa } from '@cryptoville/shared';
+import { FAUCET_USDC_TESTNET, RAMPA_SIMULADA, cotizarRampaSimulada, qrRampaSimulada, unidadesAUsdc, usdcAUnidades, type SentidoRampa } from '@cryptoville/shared';
 import { Keypair } from '@stellar/stellar-sdk';
 import { IsIn, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { MONTO_USDC } from '../common/montos';
 import { SesionGuard } from '../common/sesion.guard';
 import { serializar } from '../common/serializar';
 import { UsuarioActual } from '../common/usuario-actual';
 import { CONFIGURACION, proveedorRampa, type Configuracion } from '../config/configuracion';
-import { RUTAS_SEED_KEYS } from '../config/revision-mainnet';
 import type { Rampa, Usuario } from '../generated/prisma/client';
 import { KycService } from '../kyc/kyc.module';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,6 +40,21 @@ import { StellarService } from '../stellar/stellar.service';
 import { esWalletDe } from '../wallets/wallets.module';
 
 const DIRECCION = /^G[A-Z2-7]{55}$/;
+
+/** Dónde buscar la caja en tu PC si no está RAMPA_CAJA_LLAVE: la de los datos de prueba (npm run datos:prueba). */
+export const RUTAS_PRUEBA_KEYS = [path.resolve(__dirname, '../../../../.prueba-keys.json'), '/app/.prueba-keys.json'];
+
+/** Cada cuánto se revisa el saldo de la caja (además de después de cada recarga). */
+const REVISAR_CAJA_MS = 15 * 60_000;
+
+/** Lo último que se supo del saldo de la caja (lo muestra /api/health). */
+export interface EstadoCaja {
+  direccion: string;
+  saldo_usdc: string | null;
+  /** true: tiene menos que RAMPA_CAJA_MINIMO y hay que llenarla en el faucet. */
+  baja: boolean | null;
+  revisada_en: string | null;
+}
 
 class CotizacionDto {
   @IsIn(['entrada', 'salida'])
@@ -80,15 +97,20 @@ class SalidaDto {
 
 /**
  * Rampas: bolivianos → USDC («pagar con el QR del banco») y USDC → cuenta del banco («pasar a mi banco»).
+ * La rampa se elige con RAMPA_PROVEEDOR (`simulada`, `pollar` o `ninguna`).
  *
- * WorkVille no recibe ni guarda dinero. En mainnet el cambio lo hace Pollar (con su SDK, desde el navegador
- * y con la sesión de la persona). En testnet la rampa es SIMULADA: el «QR» es de mentira y, al tocar
- * «Simular el pago desde el banco», la API emite USDC de prueba con la llave del emisor del token de prueba.
+ * WorkVille no recibe ni guarda dinero. Con Pollar el cambio lo hace su proveedor (con su SDK, desde el navegador
+ * y con la sesión de la persona). En testnet la rampa puede ser SIMULADA: el QR es de mentira y, al tocar
+ * «Simular el pago desde el banco», la API manda USDC de testnet desde una wallet «caja» que se llena en el
+ * faucet de Circle; los retiros vuelven a esa caja. Los estados son los de una orden de Pollar (EstadoRampa).
  * Lo simulado y lo que falta revisar está en docs/simulaciones.md.
  */
 @Injectable()
-export class RampasService {
+export class RampasService implements OnModuleInit, OnModuleDestroy {
   private readonly log = new Logger('Rampas');
+  private temporizador: NodeJS.Timeout | null = null;
+  private caja: EstadoCaja | null = null;
+  private yaAvisoCajaBaja = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -96,6 +118,17 @@ export class RampasService {
     private readonly kyc: KycService,
     @Inject(CONFIGURACION) private readonly config: Configuracion,
   ) {}
+
+  onModuleInit(): void {
+    if (!this.config.rampaSimulada || this.config.entorno === 'test') return;
+    void this.revisarCaja();
+    this.temporizador = setInterval(() => void this.revisarCaja(), REVISAR_CAJA_MS);
+    this.temporizador.unref();
+  }
+
+  onModuleDestroy(): void {
+    if (this.temporizador) clearInterval(this.temporizador);
+  }
 
   get proveedor() {
     return proveedorRampa(this.config);
@@ -116,25 +149,80 @@ export class RampasService {
     }
   }
 
-  /** Llave del emisor del USDC de prueba: RAMPA_SIMULADA_LLAVE o, en desarrollo, la de .seed-keys.json. */
-  private llaveEmisor(): string {
-    const delEnv = this.config.rampaSimulada?.llaveEmisor;
+  /** Llave de la wallet caja: RAMPA_CAJA_LLAVE o, en tu PC, la caja de .prueba-keys.json. */
+  private llaveCaja(): string {
+    const delEnv = this.config.rampaSimulada?.llaveCaja;
     if (delEnv) return delEnv;
-    for (const ruta of RUTAS_SEED_KEYS) {
+    for (const ruta of RUTAS_PRUEBA_KEYS) {
       if (!existsSync(ruta)) continue;
       try {
-        const llave = (JSON.parse(readFileSync(ruta, 'utf8')) as { emisor_usdc?: { secreta?: string } }).emisor_usdc?.secreta;
+        const llave = (JSON.parse(readFileSync(ruta, 'utf8')) as { extra?: { caja?: { secreta?: string } } }).extra?.caja?.secreta;
         if (llave && /^S[A-Z2-7]{55}$/.test(llave)) return llave;
       } catch {
         // Un archivo que no se puede leer no sirve.
       }
     }
-    throw new ServiceUnavailableException('La rampa simulada no tiene la llave del emisor del USDC de prueba (RAMPA_SIMULADA_LLAVE o .seed-keys.json)');
+    throw new ServiceUnavailableException('La rampa simulada no tiene la llave de la caja (RAMPA_CAJA_LLAVE o la caja de .prueba-keys.json)');
   }
 
-  /** Quién «recibe» el USDC en un retiro simulado: el emisor del USDC de prueba (hace de rampa). */
-  private direccionRampaSimulada(): string {
-    return Keypair.fromSecret(this.llaveEmisor()).publicKey();
+  /** La wallet caja: manda el USDC de las recargas y recibe el de los retiros (hace de rampa). */
+  private direccionCaja(): string {
+    return Keypair.fromSecret(this.llaveCaja()).publicKey();
+  }
+
+  /** Lo último que se supo de la caja (null si no hay rampa simulada o todavía no se revisó). */
+  estadoCaja(): EstadoCaja | null {
+    return this.caja;
+  }
+
+  /** Lee el saldo de la caja y avisa en el registro si bajó de RAMPA_CAJA_MINIMO (una vez, hasta que se llene). */
+  async revisarCaja(): Promise<EstadoCaja | null> {
+    const simulada = this.config.rampaSimulada;
+    if (!simulada) return null;
+    let direccion: string;
+    try {
+      direccion = this.direccionCaja();
+    } catch (e) {
+      this.log.warn((e as Error).message);
+      return null;
+    }
+    try {
+      const saldo = await this.stellar.saldoDe(direccion);
+      const baja = saldo < BigInt(usdcAUnidades(String(simulada.minimoCajaUsdc)));
+      this.caja = { direccion, saldo_usdc: unidadesAUsdc(saldo), baja, revisada_en: new Date().toISOString() };
+      if (baja && !this.yaAvisoCajaBaja) {
+        this.log.warn(
+          `La caja de la rampa simulada tiene ${this.caja.saldo_usdc} USDC (mínimo ${simulada.minimoCajaUsdc}). ` +
+            `Llénala en ${FAUCET_USDC_TESTNET} (red Stellar, Testnet): ${direccion}`,
+        );
+      }
+      this.yaAvisoCajaBaja = baja;
+    } catch (e) {
+      this.log.warn(`No se pudo leer el saldo de la caja: ${String((e as Error).message).slice(0, 200)}`);
+      this.caja = { direccion, saldo_usdc: null, baja: null, revisada_en: new Date().toISOString() };
+    }
+    return this.caja;
+  }
+
+  /** Antes de mandar desde la caja: tiene que existir, aceptar el USDC y tener el monto. Si no, el problema no es de la persona. */
+  private async exigirCajaCon(unidades: bigint): Promise<string> {
+    const caja = this.direccionCaja();
+    try {
+      await this.stellar.cuenta(caja);
+    } catch (e) {
+      if (e instanceof BadRequestException) {
+        throw new ServiceUnavailableException('La wallet caja de la rampa simulada no existe en la red: revisa RAMPA_CAJA_LLAVE (docs/simulaciones.md)');
+      }
+      throw e;
+    }
+    const saldo = await this.stellar.saldoDe(caja);
+    if (saldo < unidades) {
+      void this.revisarCaja();
+      throw new ServiceUnavailableException(
+        `La rampa simulada se quedó sin USDC (la caja tiene ${unidadesAUsdc(saldo)}). Avisa al equipo de WorkVille para que la llene en el faucet de Circle.`,
+      );
+    }
+    return caja;
   }
 
   cotizar(sentido: SentidoRampa, monto: string) {
@@ -210,50 +298,46 @@ export class RampasService {
   }
 
   /**
-   * SIMULADO: hace como si el banco hubiera pagado el QR. La «rampa» (el emisor del USDC de prueba)
-   * manda el USDC de prueba a la wallet de la persona. En mainnet esto lo hace la rampa real, sola.
+   * SIMULADO: hace como si el banco hubiera pagado el QR. La «rampa» (la wallet caja) manda el USDC de testnet
+   * a la wallet de la persona. Con Pollar esto lo hace su proveedor, solo. Los estados siguen a una orden de
+   * Pollar: esperando_pago → procesando (el banco pagó) → liquidando (sale el USDC) → completada.
    */
   async simularPagoBancario(yo: Usuario, id: string): Promise<Rampa> {
     this.exigirSimulada();
     const r = await this.propia(yo, id);
     if (r.sentido !== 'entrada') throw new BadRequestException('Esa operación no es una recarga');
-    if (r.estado === 'acreditada') return r;
+    if (r.estado === 'completada') return r;
+    if (r.estado === 'procesando' || r.estado === 'liquidando') throw new ConflictException('Esta recarga ya se está procesando');
     if (r.estado !== 'esperando_pago') throw new ConflictException('Esta recarga ya no espera un pago');
     if (r.expira_en < new Date()) {
       await this.prisma.rampa.update({ where: { id }, data: { estado: 'vencida' } });
       throw new BadRequestException('El QR venció: arma otro');
     }
-    if (this.config.entorno !== 'test') await this.exigirEmisorEnRed();
-    // Se marca primero: dos clics seguidos no emiten dos veces.
-    const marcada = await this.prisma.rampa.updateMany({ where: { id, estado: 'esperando_pago' }, data: { estado: 'acreditada' } });
+    const unidades = usdcAUnidades(r.monto_usdc.toFixed(7));
+    if (this.config.entorno !== 'test') {
+      await this.exigirCajaCon(BigInt(unidades));
+      await this.stellar.exigirTrustlines([
+        { direccion: r.direccion, quien: 'Tu wallet', solucion: 'actívala desde el saldo («Activar USDC») y vuelve a intentar.' },
+      ]);
+    }
+    // Se marca primero: dos clics seguidos no mandan dos veces.
+    const marcada = await this.prisma.rampa.updateMany({ where: { id, estado: 'esperando_pago' }, data: { estado: 'procesando' } });
     if (marcada.count !== 1) throw new ConflictException('Esta recarga ya se está procesando');
     try {
+      await this.prisma.rampa.update({ where: { id }, data: { estado: 'liquidando' } });
       // En las pruebas automáticas no hay red: un hash de mentira.
       const hash =
         this.config.entorno === 'test'
           ? createHash('sha256').update(`rampa-${id}`).digest('hex')
-          : (await this.stellar.emitirParaRampaSimulada(this.llaveEmisor(), r.direccion, usdcAUnidades(r.monto_usdc.toFixed(7)))).hash;
-      this.log.log(`Recarga simulada ${r.referencia}: ${r.monto_usdc.toString()} USDC de prueba a ${r.direccion.slice(0, 6)}…`);
-      return await this.prisma.rampa.update({ where: { id }, data: { tx_hash: hash } });
+          : (await this.stellar.pagarDesdeCaja(this.llaveCaja(), r.direccion, unidades)).hash;
+      this.log.log(`Recarga simulada ${r.referencia}: ${r.monto_usdc.toString()} USDC desde la caja a ${r.direccion.slice(0, 6)}…`);
+      if (this.config.entorno !== 'test') void this.revisarCaja();
+      return await this.prisma.rampa.update({ where: { id }, data: { estado: 'completada', tx_hash: hash } });
     } catch (e) {
-      // Un 4xx (simulación fallida, transacción rechazada o fallida en la red) no emitió nada: se puede reintentar.
-      // Ante un 5xx (sin red o sin confirmar) no se sabe si se emitió, así que la recarga queda fallida.
-      const sinEmitir = e instanceof HttpException && e.getStatus() < 500;
-      await this.prisma.rampa.update({ where: { id }, data: { estado: sinEmitir ? 'esperando_pago' : 'fallida' } });
-      throw e;
-    }
-  }
-
-  /** La cuenta emisora tiene que existir en la red; si no, el error no es de la wallet de la persona. */
-  private async exigirEmisorEnRed(): Promise<void> {
-    try {
-      await this.stellar.cuenta(this.direccionRampaSimulada());
-    } catch (e) {
-      if (e instanceof BadRequestException) {
-        throw new ServiceUnavailableException(
-          'La cuenta emisora del USDC de prueba no existe en la red: revisa RAMPA_SIMULADA_LLAVE (docs/simulaciones.md)',
-        );
-      }
+      // Un 4xx (simulación fallida, transacción rechazada o fallida en la red) no mandó nada: se puede reintentar.
+      // Ante un 5xx (sin red o sin confirmar) no se sabe si salió el USDC, así que la recarga queda fallida.
+      const sinMandar = e instanceof HttpException && e.getStatus() < 500;
+      await this.prisma.rampa.update({ where: { id }, data: { estado: sinMandar ? 'esperando_pago' : 'fallida' } });
       throw e;
     }
   }
@@ -278,7 +362,8 @@ export class RampasService {
         tipo_cambio: c.tipo_cambio,
         comision_local: c.comision_local,
         direccion: dto.direccion,
-        estado: 'esperando_envio',
+        // Como una orden de Pollar: la rampa espera el USDC de la persona.
+        estado: 'esperando_pago',
         referencia: this.referencia(),
         banco: dto.banco,
         cuenta_final: dto.cuenta.slice(-4),
@@ -291,19 +376,24 @@ export class RampasService {
   async datosParaEnvio(yo: Usuario, id: string, direccion: string): Promise<{ destino: string; unidades: string }> {
     this.exigirSimulada();
     const r = await this.propia(yo, id);
-    if (r.sentido !== 'salida' || r.estado !== 'esperando_envio') throw new ConflictException('Este retiro ya no espera un envío');
+    if (r.sentido !== 'salida' || r.estado !== 'esperando_pago') throw new ConflictException('Este retiro ya no espera un envío');
     if (r.expira_en < new Date()) {
       await this.prisma.rampa.update({ where: { id }, data: { estado: 'vencida' } });
       throw new BadRequestException('Pasó demasiado tiempo: arma el retiro otra vez');
     }
     if (r.direccion !== direccion) throw new BadRequestException('Firma con la misma wallet que elegiste para el retiro');
-    return { destino: this.direccionRampaSimulada(), unidades: usdcAUnidades(r.monto_usdc.toFixed(7)) };
+    // El USDC vuelve a la caja: así la rampa simulada se rellena con los retiros.
+    return { destino: this.direccionCaja(), unidades: usdcAUnidades(r.monto_usdc.toFixed(7)) };
   }
 
-  /** El envío del retiro ya está en la red (lo verificó /transacciones/enviar). */
+  /**
+   * El envío del retiro ya está en la red (lo verificó /transacciones/enviar). SIMULADO: el «banco» paga en el acto,
+   * así que pasa directo a completada (con Pollar pasaría por procesando mientras el banco paga).
+   */
   async registrarEnvio(yo: Usuario, id: string, hash: string): Promise<Rampa> {
-    const marcada = await this.prisma.rampa.updateMany({ where: { id, usuario_id: yo.id, estado: 'esperando_envio' }, data: { estado: 'enviada', tx_hash: hash } });
+    const marcada = await this.prisma.rampa.updateMany({ where: { id, usuario_id: yo.id, estado: 'esperando_pago' }, data: { estado: 'completada', tx_hash: hash } });
     if (marcada.count !== 1) throw new ConflictException('Este retiro ya se registró');
+    if (this.config.entorno !== 'test') void this.revisarCaja();
     return this.prisma.rampa.findUniqueOrThrow({ where: { id } });
   }
 }

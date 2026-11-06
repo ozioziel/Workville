@@ -19,6 +19,8 @@ for (const variable of [
   'VAPID_PRIVATE_KEY',
   'VAPID_CONTACTO',
   'RAMPA_SIMULADA',
+  'RAMPA_PROVEEDOR',
+  'RAMPA_CAJA_LLAVE',
   'RAMPA_SIMULADA_LLAVE',
 ]) {
   process.env[variable] = '';

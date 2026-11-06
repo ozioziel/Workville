@@ -1,5 +1,5 @@
 // Rampas: pagar con el QR del banco (bolivianos → USDC) y pasar a mi banco (USDC → cuenta del banco).
-// En testnet la rampa es SIMULADA (la API emite USDC de prueba): ver docs/simulaciones.md.
+// En testnet la rampa puede ser SIMULADA (la API manda USDC de testnet desde una wallet caja): ver docs/simulaciones.md.
 import type { EstadoRampa, SentidoRampa } from '@cryptoville/shared';
 import { api } from '../../lib/api';
 

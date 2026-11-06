@@ -79,11 +79,14 @@ export interface Configuracion {
   entornoServicios: 'pruebas' | 'produccion';
   /** Secreto para la huella del documento del KYC (HMAC). Obligatorio si Didit está encendido. */
   secretoKyc: string | null;
+  /** Qué rampa pasa bolivianos ↔ USDC (RAMPA_PROVEEDOR). Null: ninguna, «Pagar con el QR de tu banco» no aparece. */
+  rampa: 'simulada' | 'pollar' | null;
   /**
    * Rampa SIMULADA (solo testnet): «pagar con el QR del banco» y «pasar a mi banco» de mentira, para probar el flujo.
-   * Emite USDC de prueba con la llave del emisor (RAMPA_SIMULADA_LLAVE o .seed-keys.json). Ver docs/simulaciones.md.
+   * El USDC sale de una wallet «caja» (RAMPA_CAJA_LLAVE o, en tu PC, la caja de .prueba-keys.json) y los retiros
+   * vuelven a ella. `minimoCajaUsdc`: por debajo de ese saldo la API avisa. Ver docs/simulaciones.md.
    */
-  rampaSimulada: { llaveEmisor: string | null } | null;
+  rampaSimulada: { llaveCaja: string | null; minimoCajaUsdc: number } | null;
 }
 
 function requerida(env: NodeJS.ProcessEnv, nombre: string): string {
@@ -212,13 +215,11 @@ export function leerConfiguracion(env: NodeJS.ProcessEnv = process.env): Configu
   const secretoKyc = opcional(env, 'KYC_HMAC_SECRET');
   if (secretoKyc && secretoKyc.length < 32) throw new Error('KYC_HMAC_SECRET debe tener al menos 32 caracteres');
 
-  const rampaTexto = opcional(env, 'RAMPA_SIMULADA');
-  if (rampaTexto && !['si', 'no'].includes(rampaTexto)) throw new Error('RAMPA_SIMULADA debe ser "si" o "no"');
-  if (rampaTexto === 'si' && red === 'mainnet') {
-    throw new Error('RAMPA_SIMULADA=si solo existe en testnet: en mainnet el cambio de bolivianos lo hace una rampa real');
-  }
-  const llaveEmisor = opcional(env, 'RAMPA_SIMULADA_LLAVE');
-  if (llaveEmisor && !/^S[A-Z2-7]{55}$/.test(llaveEmisor)) throw new Error('RAMPA_SIMULADA_LLAVE debe ser una llave secreta S… (la del emisor del USDC de prueba)');
+  const rampa = rampaDe(env, red, Boolean(servicios.pollar));
+  const llaveCaja = opcional(env, 'RAMPA_CAJA_LLAVE');
+  if (llaveCaja && !/^S[A-Z2-7]{55}$/.test(llaveCaja)) throw new Error('RAMPA_CAJA_LLAVE debe ser una llave secreta S… (la de la wallet caja de la rampa simulada)');
+  // La caja es la única llave del servidor que manda USDC: en mainnet no puede existir.
+  if (llaveCaja && red === 'mainnet') throw new Error('RAMPA_CAJA_LLAVE solo existe en testnet: en mainnet el servidor no guarda llaves que muevan dinero');
 
   const reglas = reglasDe(red);
   const origenes = opcional(env, 'CORS_ORIGINS');
@@ -257,18 +258,40 @@ export function leerConfiguracion(env: NodeJS.ProcessEnv = process.env): Configu
     servicios,
     entornoServicios,
     secretoKyc,
-    rampaSimulada: rampaTexto === 'si' ? { llaveEmisor } : null,
+    rampa,
+    rampaSimulada: rampa === 'simulada' ? { llaveCaja, minimoCajaUsdc: entero(env, 'RAMPA_CAJA_MINIMO', 50) } : null,
   };
+}
+
+/**
+ * Qué rampa hay para pasar bolivianos ↔ USDC, según RAMPA_PROVEEDOR:
+ * - `simulada`: solo testnet (QR de mentira, el USDC sale de la caja).
+ * - `pollar`: la maneja la web con el SDK de Pollar y la sesión de la persona; necesita POLLAR_API_KEY.
+ * - `ninguna`: no hay rampa.
+ * Vacía: `simulada` si RAMPA_SIMULADA=si (el nombre anterior), `pollar` en mainnet con Pollar encendido, y si no, ninguna.
+ */
+function rampaDe(env: NodeJS.ProcessEnv, red: RedStellar, hayPollar: boolean): 'simulada' | 'pollar' | null {
+  const anterior = opcional(env, 'RAMPA_SIMULADA');
+  if (anterior && !['si', 'no'].includes(anterior)) throw new Error('RAMPA_SIMULADA debe ser "si" o "no" (mejor usa RAMPA_PROVEEDOR)');
+  const elegida = opcional(env, 'RAMPA_PROVEEDOR');
+  if (elegida && !['simulada', 'pollar', 'ninguna'].includes(elegida)) throw new Error('RAMPA_PROVEEDOR debe ser "simulada", "pollar" o "ninguna"');
+  if (elegida && anterior === 'si' && elegida !== 'simulada') {
+    throw new Error(`RAMPA_PROVEEDOR=${elegida} y RAMPA_SIMULADA=si no van juntas: deja solo RAMPA_PROVEEDOR`);
+  }
+  const rampa = elegida === 'ninguna' ? null : ((elegida as 'simulada' | 'pollar' | null) ?? (anterior === 'si' ? 'simulada' : red === 'mainnet' && hayPollar ? 'pollar' : null));
+  if (rampa === 'simulada' && red === 'mainnet') {
+    throw new Error('La rampa simulada solo existe en testnet: en mainnet el cambio de bolivianos lo hace una rampa real');
+  }
+  if (rampa === 'pollar' && !hayPollar) throw new Error('RAMPA_PROVEEDOR=pollar necesita Pollar encendido (POLLAR_API_KEY)');
+  return rampa;
 }
 
 export const CONFIGURACION = Symbol('CONFIGURACION');
 
 /**
- * Qué rampa hay para pasar bolivianos ↔ USDC: la simulada (solo testnet), la de Pollar (mainnet; la maneja
+ * Qué rampa hay para pasar bolivianos ↔ USDC: la simulada (solo testnet), la de Pollar (la maneja
  * la web con el SDK de Pollar, con la sesión de la persona) o ninguna.
  */
 export function proveedorRampa(c: Configuracion): 'simulada' | 'pollar' | null {
-  if (c.rampaSimulada) return 'simulada';
-  if (c.stellar.red === 'mainnet' && c.servicios.pollar) return 'pollar';
-  return null;
+  return c.rampa;
 }

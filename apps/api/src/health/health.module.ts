@@ -4,6 +4,7 @@ import { CONFIG_INICIAL, PASSPHRASE, datosRed, enlaceContrato } from '@cryptovil
 import type { Response } from 'express';
 import { CONFIGURACION, proveedorRampa, type Configuracion } from '../config/configuracion';
 import { PrismaService } from '../prisma/prisma.service';
+import { RampasModule, RampasService } from '../rampas/rampas.module';
 import { ContratoV2Service } from '../stellar/contrato-v2.service';
 import { StellarService } from '../stellar/stellar.service';
 
@@ -14,6 +15,7 @@ export class HealthController {
     private readonly prisma: PrismaService,
     private readonly stellar: StellarService,
     private readonly contratoV2: ContratoV2Service,
+    private readonly rampas: RampasService,
     @Inject(CONFIGURACION) private readonly config: Configuracion,
   ) {}
 
@@ -28,6 +30,8 @@ export class HealthController {
       supabase: { base_de_datos: db, auth },
       contrato_configurado: Boolean(this.config.stellar.contratoId),
       contrato_v2_configurado: Boolean(this.config.stellar.contratoV2Id),
+      /** Solo con la rampa simulada: saldo de la caja y si hay que llenarla (`baja`). */
+      rampa_caja: this.rampas.estadoCaja(),
       red: this.config.stellar.red,
       hora: new Date().toISOString(),
     });
@@ -106,5 +110,5 @@ export class HealthController {
   }
 }
 
-@Module({ controllers: [HealthController] })
+@Module({ imports: [RampasModule], controllers: [HealthController] })
 export class HealthModule {}

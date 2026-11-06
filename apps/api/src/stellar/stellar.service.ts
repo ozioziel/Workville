@@ -277,21 +277,30 @@ export class StellarService {
   }
 
   /**
-   * Rampa SIMULADA (solo testnet): emite USDC de prueba a una wallet, como si una rampa real hubiera recibido
-   * los bolivianos. Solo puede llamar a `mint` del token de pago, y solo con RAMPA_SIMULADA=si en testnet.
+   * Rampa SIMULADA (solo testnet): manda USDC desde la wallet caja a una wallet, como si una rampa real hubiera
+   * recibido los bolivianos. Es la única excepción a «el servidor no firma pagos»: solo puede llamar a `transfer`
+   * del token de pago, desde la caja, y solo con la rampa simulada en testnet.
    */
-  async emitirParaRampaSimulada(llaveEmisor: string, destino: string, unidades: string): Promise<{ hash: string; confirmada: TransaccionConfirmada }> {
+  async pagarDesdeCaja(llaveCaja: string, destino: string, unidades: string): Promise<{ hash: string; confirmada: TransaccionConfirmada }> {
     const { red, tokenId } = this.config.stellar;
-    if (red !== 'testnet' || !this.config.rampaSimulada) throw new Error('La rampa simulada solo existe en testnet');
+    if (red !== 'testnet' || this.config.rampa !== 'simulada') throw new Error('La rampa simulada solo existe en testnet');
     if (!tokenId) throw new ServiceUnavailableException('Falta PAYMENT_TOKEN_ID');
-    if (await this.activoDelToken()) {
-      throw new ServiceUnavailableException('La rampa simulada no puede emitir el USDC de Circle: pide USDC de testnet en https://faucet.circle.com');
-    }
-    const par = Keypair.fromSecret(llaveEmisor);
-    const { xdr: sinFirmar } = await this.preparar(par.publicKey(), tokenId, 'mint', [new Address(destino).toScVal(), nativeToScVal(BigInt(unidades), { type: 'i128' })]);
+    if (BigInt(unidades) <= 0n) throw new Error('El monto de la caja tiene que ser mayor que 0');
+    const par = Keypair.fromSecret(llaveCaja);
+    if (par.publicKey() === destino) throw new Error('La caja no se paga a sí misma');
+    const args = [new Address(par.publicKey()).toScVal(), new Address(destino).toScVal(), nativeToScVal(BigInt(unidades), { type: 'i128' })];
+    const { xdr: sinFirmar } = await this.preparar(par.publicKey(), tokenId, 'transfer', args);
     const tx = TransactionBuilder.fromXDR(sinFirmar, this.passphrase) as Transaction;
     tx.sign(par);
     return { hash: hashDe(tx), confirmada: await this.enviar(tx.toXDR()) };
+  }
+
+  /** Saldo del token de pago de una cuenta, en unidades (0 si no tiene la trustline del USDC). */
+  async saldoDe(direccion: string): Promise<bigint> {
+    const { tokenId } = this.config.stellar;
+    if (!tokenId) throw new ServiceUnavailableException('Falta PAYMENT_TOKEN_ID');
+    if (!(await this.tieneTrustline(direccion))) return 0n;
+    return BigInt((await this.leer(tokenId, 'balance', [new Address(direccion).toScVal()])) as bigint | number | null ?? 0);
   }
 
   private textoFallida(r: rpc.Api.GetFailedTransactionResponse): string {
