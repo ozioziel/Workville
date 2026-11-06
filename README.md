@@ -17,6 +17,19 @@ Funciona para los dos lados con un interruptor arriba al centro, que cambia el *
 
 Primera versión en **testnet** (aparece la franja «Modo de prueba: el dinero no es real»). Qué falta para mainnet: [docs/mainnet.md](docs/mainnet.md).
 
+## Verlo en la red (testnet)
+
+Todo lo que mueve dinero se puede revisar en [stellar.expert](https://stellar.expert/explorer/testnet), sin instalar nada:
+
+| Qué | Dirección |
+|---|---|
+| Contrato **escrow v2** (pagos directos, con garantía y por etapas) | [`CB42MFK5…HHUVO`](https://stellar.expert/explorer/testnet/contract/CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO) |
+| Token de pago: **USDC de Circle** (SAC) | [`CBIELTK6…MXQDAMA`](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA) |
+| **Admin** del contrato, multifirma 2 de 3 | [`GD74KD7J…FINNNTU`](https://stellar.expert/explorer/testnet/account/GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU) |
+| **Árbitro** de las disputas, multifirma 1 de 2 | [`GBGNHOJB…EZDBB`](https://stellar.expert/explorer/testnet/account/GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB) |
+
+Para probarlo de punta a punta: entra con una wallet de testnet (Freighter u otra), pide USDC de prueba en el [faucet de Circle](https://faucet.circle.com) o con la recarga simulada del saldo, contrata un servicio y sigue el pedido; cada paso deja su transacción en la red. El detalle de cada cuenta y contrato está en [cuentas y contratos](docs/cuentas-y-contratos.md), y lo que todavía es simulado, en [simulaciones](docs/simulaciones.md).
+
 ## Cómo está hecho
 
 | Parte | Tecnología | Carpeta |
