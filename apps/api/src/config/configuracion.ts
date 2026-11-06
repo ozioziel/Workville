@@ -2,6 +2,7 @@ import {
   CONFIG_INICIAL,
   datosRed,
   esContratoValido,
+  paisesRampaEncendidos,
   pareceDireccionStellar,
   reglasDe,
   type RedStellar,
@@ -87,6 +88,11 @@ export interface Configuracion {
    * vuelven a ella. `minimoCajaUsdc`: por debajo de ese saldo la API avisa. Ver docs/simulaciones.md.
    */
   rampaSimulada: { llaveCaja: string | null; minimoCajaUsdc: number } | null;
+  /**
+   * Rampa con Pollar: países encendidos (RAMPA_POLLAR_PAISES, por defecto los activos de PAISES_RAMPA: Bolivia).
+   * Vacío si la rampa no es la de Pollar.
+   */
+  rampaPaises: string[];
 }
 
 function requerida(env: NodeJS.ProcessEnv, nombre: string): string {
@@ -220,6 +226,7 @@ export function leerConfiguracion(env: NodeJS.ProcessEnv = process.env): Configu
   if (llaveCaja && !/^S[A-Z2-7]{55}$/.test(llaveCaja)) throw new Error('RAMPA_CAJA_LLAVE debe ser una llave secreta S… (la de la wallet caja de la rampa simulada)');
   // La caja es la única llave del servidor que manda USDC: en mainnet no puede existir.
   if (llaveCaja && red === 'mainnet') throw new Error('RAMPA_CAJA_LLAVE solo existe en testnet: en mainnet el servidor no guarda llaves que muevan dinero');
+  const rampaPaises = rampaPaisesDe(env, red, rampa);
 
   const reglas = reglasDe(red);
   const origenes = opcional(env, 'CORS_ORIGINS');
@@ -260,7 +267,18 @@ export function leerConfiguracion(env: NodeJS.ProcessEnv = process.env): Configu
     secretoKyc,
     rampa,
     rampaSimulada: rampa === 'simulada' ? { llaveCaja, minimoCajaUsdc: entero(env, 'RAMPA_CAJA_MINIMO', 50) } : null,
+    rampaPaises,
   };
+}
+
+/** Países de la rampa con Pollar (RAMPA_POLLAR_PAISES=BO,AR…). Los del sandbox (Perú, Colombia) no van en mainnet. */
+function rampaPaisesDe(env: NodeJS.ProcessEnv, red: RedStellar, rampa: 'simulada' | 'pollar' | null): string[] {
+  const texto = opcional(env, 'RAMPA_POLLAR_PAISES');
+  const lista = texto ? texto.split(',').map((p) => p.trim()).filter(Boolean) : null;
+  const paises = paisesRampaEncendidos(lista);
+  const sandbox = paises.filter((p) => p.soloSandbox);
+  if (red === 'mainnet' && sandbox.length) throw new Error(`RAMPA_POLLAR_PAISES: ${sandbox.map((p) => p.pais).join(', ')} solo sirve para probar el sandbox de Pollar (testnet)`);
+  return rampa === 'pollar' ? paises.map((p) => p.pais) : [];
 }
 
 /**

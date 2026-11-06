@@ -114,6 +114,17 @@ describe('configuración y revisión de mainnet', () => {
     expect(() => leerConfiguracion({ ...ENV_BASE, STELLAR_NETWORK: 'mainnet', RAMPA_CAJA_LLAVE: caja })).toThrow(/solo existe en testnet/);
   });
 
+  it('la rampa con Pollar se ofrece en Bolivia, o en los países de RAMPA_POLLAR_PAISES', () => {
+    const pollar = { ...ENV_BASE, RAMPA_PROVEEDOR: 'pollar', POLLAR_API_KEY: 'pk' };
+    expect(leerConfiguracion(pollar).rampaPaises).toEqual(['BO']);
+    expect(leerConfiguracion({ ...pollar, RAMPA_POLLAR_PAISES: 'bo, ar' }).rampaPaises).toEqual(['BO', 'AR']);
+    // Sin la rampa de Pollar no hay países.
+    expect(leerConfiguracion({ ...ENV_BASE, RAMPA_POLLAR_PAISES: 'AR' }).rampaPaises).toEqual([]);
+    expect(() => leerConfiguracion({ ...pollar, RAMPA_POLLAR_PAISES: 'XX' })).toThrow(/País de rampa desconocido/);
+    // Perú y Colombia son solo para el sandbox de testnet.
+    expect(() => leerConfiguracion({ ...pollar, STELLAR_NETWORK: 'mainnet', RAMPA_POLLAR_PAISES: 'BO,PE' })).toThrow(/sandbox de Pollar/);
+  });
+
   it('en testnet no se exige nada; en mainnet sí', () => {
     const testnet = leerConfiguracion(ENV_BASE);
     expect(revisarParaArrancar(testnet, { llavesDeEjemplo: true }).problemas).toEqual([]);
