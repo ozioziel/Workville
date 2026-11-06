@@ -8,7 +8,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 | 2 | Pasar a mi banco (retiro) | 🟡 **Simulada** en testnet; con Pollar **no está hecha** | `apps/api/src/rampas/`, `apps/web/src/ui/panels/PanelRetiro.tsx` |
 | 3 | Rampa real con Pollar (QR del banco) | 🟠 **Programada, probada solo con un cliente falso**; falta el sandbox de Pollar | `apps/web/src/features/rampas/pollar.ts`, `ui/pagos/RecargaConPollar.tsx`, `apps/api/src/rampas/` |
 | 4 | Entrar con Google | 🔴 **Apagado** (`POLLAR_GOOGLE` vacío): programado con Pollar, pero en la prueba no funcionó | `apps/web/src/features/auth/pollar.ts`, `sesion.tsx`, `PanelBienvenida.tsx` |
-| 5 | Entrar con el correo (Pollar) | 🟠 **Real, sin probar**: el panel de Pollar lo marca «próximamente» | los mismos archivos |
+| 5 | Entrar con el correo (Pollar) | 🟠 **Real, sin probar** con cuentas reales. En el panel de Pollar solo la página para configurar proveedores dice «próximamente»; `login()` ya acepta el correo | los mismos archivos |
 | 6 | KYC (Didit) | 🟡 **Sandbox**: verifica sin cobrar y sin validez real | `apps/api/src/kyc/` |
 | 7 | Cuentas «prueba-…» verificadas | 🟡 **De mentira**, solo en la base local | `scripts/datos-de-prueba.mjs` |
 | 8 | USDC de testnet | 🟡 El servidor usa el **USDC de Circle de testnet** (faucet gratis, cada wallet activa su trustline). En tu PC puede seguir el token propio | `packages/shared/src/stellar/usdc.ts`, `contracts/usdc-prueba` |
@@ -62,7 +62,7 @@ Lo que hoy funciona **de mentira** (para poder probar el flujo completo en testn
 
 Se usa con `RAMPA_PROVEEDOR=pollar` (en mainnet, también si está vacía y Pollar está encendido; `servicios.rampa === 'pollar'`), solo si la persona entró con su correo (sesión de Pollar) y solo en los países de `RAMPA_POLLAR_PAISES` (vacío = Bolivia; la lista está en `PAISES_RAMPA`, `packages/shared/src/rampas.ts`). **No se probó con Pollar de verdad**: las pruebas usan un cliente falso (`apps/web/src/features/rampas/pollar.test.ts`).
 
-Cómo funciona (SDK de Pollar 0.12, donde una rampa es una orden):
+Cómo funciona (SDK de Pollar 0.12, donde una rampa es una orden). Lo que se dice aquí de Pollar sale de su documentación ([docs.pollar.xyz](https://docs.pollar.xyz), revisada el 6 nov 2026); lo que no está ahí va marcado como pregunta:
 
 | Paso | Dónde | Qué hace |
 |---|---|---|
@@ -78,7 +78,7 @@ Cómo funciona (SDK de Pollar 0.12, donde una rampa es una orden):
 | Fallas | `vistaOrden`, `reintentar` | El texto de la falla y «Reintentar» (`retryRampOrder`) si se puede |
 | Registro en WorkVille | `POST /api/rampas/pollar/ordenes` y `/estado` | Una fila en `rampas` por orden (la referencia es el id de Pollar) y cada cambio de estado. Al completarse, la API **lee en la red** la transacción del último tramo y guarda el USDC que de verdad llegó a la wallet (`usdcRecibido` en `apps/api/src/stellar/cadena.ts`). Sin esa transacción, no queda completada |
 
-**Probarlo en el sandbox de Pollar (testnet).** Pollar no tiene bolivianos en testnet (pregunta 1 del plan), pero su sandbox tiene otros países. El mismo código sirve para Bolivia:
+**Probarlo en el sandbox de Pollar (testnet).** La documentación no dice si Stereum (BOB) está en testnet: el panel de la app de testnet lo muestra en **Ramps → Providers** («the providers Pollar offers on your app's network»). Si está, se prueba con `RAMPA_POLLAR_PAISES=BO`. Si no, el anchor de prueba de Pollar tiene ARS, PEN y COP ([guía](https://docs.pollar.xyz/docs/guides/sandbox-anchor)). El mismo código sirve para Bolivia:
 
 1. En el `.env` local: `RAMPA_PROVEEDOR=pollar`, `POLLAR_API_KEY=…` y `RAMPA_POLLAR_PAISES` con un país del sandbox (`AR` o `PE`; `PE` y `CO` solo valen en testnet).
 2. `npm run dev` y entrar **con el correo**. Pollar solo funciona con HTTPS o en `localhost`.
@@ -87,10 +87,11 @@ Cómo funciona (SDK de Pollar 0.12, donde una rampa es una orden):
 5. Anotar lo que no coincida: los campos que pide el proveedor, si aparece `SIGNATURE` o `COSIGN_APPROVAL` y qué pasa con el KYC.
 
 Lo que falta revisar:
-- **Bolivia de verdad:** que Pollar tenga la ruta `BO` con `rail: 'QR'` (por Stereum, con tramos en otra red) y que su QR sirva con QR Simple.
+- **Bolivia de verdad:** según la documentación de Pollar, Stereum vende USDC por QR del banco y compra USDC pagando a una cuenta bancaria, y liquida en Polygon. La ruta es BOB → USDT en Polygon → swap a USDC → puente CCTP → USDC en Stellar, con una *rail wallet* de la persona en Polygon y la **wallet de gas de Polygon de la app con POL** (Wallets → Sponsorship). Falta ver si el corredor está en la app de testnet y que su QR sirva con QR Simple.
+- **Verificación antes de cotizar:** una ruta puede pedir pasos antes de dar precio (`KYC`, `FORM`, `REGISTRY_CHECK` con el SEGIP, `PROVIDER_REGISTRATION`). Hoy WorkVille solo muestra el aviso, sin botón para hacerlos (`RecargaConPollar.tsx`). Vaquita, que usa Pollar, pedía en noviembre de 2026 un KYC con Didit: hace falta al menos `startKyc` / `getKycStatus` y volver a cotizar.
 - **Si la persona cierra la app** en medio de la orden, la fila de `rampas` queda en el último estado que vio la web. La orden sigue en Pollar: hay que retomarla con `listRampOrders({ open: 'true' })` (todavía no está hecho).
-- **Wallet externa (Freighter):** hoy la rampa necesita la sesión de Pollar. Falta saber si Pollar puede depositar en una wallet externa (pregunta 2).
-- **KYC dos veces:** ver si el KYC del proveedor (SEGIP) puede reusar el de Didit (pregunta 3).
+- **Wallet externa (Freighter):** hoy la rampa de WorkVille necesita la sesión de Pollar. Pollar sí lo permite: desde el backend con la Server API (`PUT /v3/ramps/customers/wallets/STELLAR` y la firma del tramo `SIGNATURE`) o entrando a Pollar con Freighter como adaptador. No está hecho en WorkVille.
+- **KYC dos veces:** Pollar acepta una cuenta propia de Didit como opción de KYC (Integrations → KYC → «Use your own Didit account»). Preguntar a Pollar si el corredor de Stereum puede aceptar esa opción, para que una sola verificación sirva para la rampa y para el ✔ de WorkVille.
 - **El token:** la rampa entrega USDC de Circle. En testnet el servidor ya lo usa (`PAYMENT_TOKEN_ID` = su SAC, `CBIELTK6…DAMA`). En mainnet es el SAC del USDC de Circle de mainnet (`npm run mainnet:revisar` lo exige).
 
 Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/propuestas/pagos-con-qr-bolivia.md`, que es un archivo local fuera de git.
@@ -104,15 +105,15 @@ Más contexto, preguntas abiertas y el plan B (Meru, otros *anchors*): `docs/pro
 
 **Es real, no simulado:** usa el login de Pollar (`login({ provider: 'google' })`, en una ventana de Google). La app «WorkVille» de Pollar tiene encendidos Google y el correo; se comprobó con su `applications/config`.
 
-**Google está apagado (8 oct 2026):** en la prueba con una cuenta de Google no funcionó. El botón solo aparece con `POLLAR_GOOGLE=si`; sin eso, el botón grande vuelve a ser «Entrar con tu correo». Antes de encenderlo, revisar con Pollar por qué falla (su panel marca el login como «próximamente»).
+**Google está apagado (8 oct 2026):** en la prueba con una cuenta de Google no funcionó. El botón solo aparece con `POLLAR_GOOGLE=si`; sin eso, el botón grande vuelve a ser «Entrar con tu correo». Causa probable, según la documentación de Pollar: mientras la lista **Allowed redirect URIs** (Build → Domains) esté vacía, todo login con OAuth se rechaza con `APPLICATION_HAS_NO_REDIRECT_URIS`. Revisar esa lista antes de encenderlo.
 
-**Solo funciona con HTTPS o en `localhost`:** Pollar usa funciones del navegador que solo existen en páginas seguras. En el VPS con `http://IP:puerto` no funciona: ahí conviene dejar `POLLAR_API_KEY` vacío hasta tener HTTPS.
+**Solo funciona con HTTPS o en `localhost`:** la sesión de Pollar va atada a una llave del dispositivo (DPoP), que necesita `crypto.subtle` y `crypto.randomUUID`, y el navegador solo los da en HTTPS o en `localhost` (guía de actualización de Pollar). En el VPS con `http://IP:puerto` no funciona: ahí conviene dejar `POLLAR_API_KEY` vacío hasta tener HTTPS.
 
 **Falta probarlo** con una cuenta de Google de verdad:
-- En el panel de Pollar (**Build → Domains**) tienen que estar `http://localhost:5173` y la dirección de la página desplegada.
+- En el panel de Pollar (**Build → Domains**): en **Allowed origins**, `http://localhost:5173` y la dirección de la página desplegada (si falta, el SDK da `Origin not allowed`); en **Allowed redirect URIs**, las mismas direcciones para la vuelta de Google.
 - Al entrar, Pollar crea una wallet para la persona y la app le pide **firmar el mensaje de inicio de sesión** (SEP-53) con esa wallet. Hay que confirmar que la wallet de Pollar lo firma bien.
 - La cuenta nueva toma el **nombre de Google** en lugar de «Vecino 1234».
-- El panel de Pollar marca su login como «próximamente». Si la ventana no abre o da error, es de su lado: anotar el mensaje y preguntarles.
+- En el panel de Pollar, la página Integrations → Authentication dice «próximamente», pero es solo la configuración por app: según su documentación, Google funciona sin configurar nada. Si la ventana no abre o da error, anotar el código del error (por ejemplo `APPLICATION_HAS_NO_REDIRECT_URIS`) y preguntarles.
 
 ## 6 a 11. Lo demás
 

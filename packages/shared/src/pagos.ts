@@ -264,6 +264,24 @@ export function vencioParaAccion(
 }
 
 /**
+ * ¿Todavía se puede hacer una acción con plazo? Lo mismo que exige el contrato v2:
+ * entregar hasta la fecha límite, y pedir cambios dentro del plazo de revisión y hasta `maxCambios` veces.
+ */
+export function aTiempoParaAccion(
+  accion: AccionFase,
+  fase: { fecha_limite: string; entregada_en: string | null; cambios: number },
+  plazos: { revisionSeg: number },
+  maxCambios: number,
+  ahora = Date.now(),
+): boolean {
+  if (accion === 'entregar_fase') return ahora <= Date.parse(fase.fecha_limite);
+  if (accion === 'pedir_cambios') {
+    return fase.cambios < maxCambios && fase.entregada_en !== null && ahora <= Date.parse(fase.entregada_en) + plazos.revisionSeg * 1000;
+  }
+  return true;
+}
+
+/**
  * Huella de la entrega de una fase: SHA-256 de la lista de sus pruebas (tipo y huella de cada una, en orden).
  * Esta es la cadena que se resume; el resumen lo calcula quien tenga SHA-256 (la API con node:crypto).
  */

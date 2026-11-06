@@ -163,7 +163,9 @@ export class PagosService {
     const { pedido, rol } = await this.orders.cargarVisible(id, yo);
     if (rol !== 'proveedor') throw new ForbiddenException('El plan lo arma el proveedor');
     if (pedido.metodo_pago !== 'etapas') throw new BadRequestException('Este pedido no es por etapas');
-    if (pedido.estado === 'aceptado' && pedido.plan_aceptado_en) throw new ConflictException('El cliente ya aceptó el plan');
+    // Un plan aceptado ya no se cambia, salvo que una de sus fechas haya pasado sin que se pagara: el contrato no lo
+    // aceptaría (FechaInvalida) y el pedido quedaría sin poder pagarse.
+    if (pedido.estado === 'aceptado' && pedido.plan_aceptado_en && !(await this.planConFechaPasada(id))) throw new ConflictException('El cliente ya aceptó el plan');
     if (pedido.estado !== 'solicitado' && pedido.estado !== 'aceptado') throw new ConflictException('El plan solo se arma antes de pagar');
     const monto = montoUsdc ?? formatoUsdc(String(pedido.monto_usdc));
     this.validarPlanConMonto(plan, monto);
@@ -179,7 +181,8 @@ export class PagosService {
         );
         await tx.pasoPedido.create({ data: { pedido_id: id, accion: 'aceptar', declarado_por: yo.id } });
       } else {
-        await tx.pedido.update({ where: { id }, data: { fecha_limite: ultima, monto_usdc: monto, plan_comentario: null } });
+        // El plan nuevo lo tiene que aceptar otra vez el cliente.
+        await tx.pedido.update({ where: { id }, data: { fecha_limite: ultima, monto_usdc: monto, plan_comentario: null, plan_aceptado_en: null } });
       }
       await tx.fase.deleteMany({ where: { pedido_id: id } });
       await tx.fase.createMany({ data: this.filasDelPlan(id, plan, monto) });
@@ -191,6 +194,11 @@ export class PagosService {
       id,
     );
     return this.orders.cargar(id);
+  }
+
+  /** ¿Alguna fecha del plan ya pasó? (Antes de pagar, eso impide crear el pedido en el contrato.) */
+  private async planConFechaPasada(pedidoId: string): Promise<boolean> {
+    return (await this.prisma.fase.count({ where: { pedido_id: pedidoId, fecha_limite: { lte: new Date() } } })) > 0;
   }
 
   /** Lanza un error en español si el plan no es válido o el monto no se puede cobrar. */
@@ -419,7 +427,13 @@ export class PagosService {
       if (!pedido.plan_aceptado_en) throw new ConflictException('Primero acepta el plan de fases');
       const plan = await this.planEnContrato(pedido.id);
       if (!plan.length) throw new ConflictException('El pedido no tiene plan');
-      if (plan.some((f) => Number(f.fechaLimiteSeg) * 1000 <= Date.now())) throw new BadRequestException('Una fecha del plan ya pasó: pide al proveedor que lo actualice');
+      if (plan.some((f) => Number(f.fechaLimiteSeg) * 1000 <= Date.now())) {
+        throw new BadRequestException(
+          pedido.metodo_pago === 'etapas'
+            ? 'Una fecha del plan ya pasó: pide al proveedor que lo actualice'
+            : 'La fecha límite ya pasó: cancela el pedido y pídelo otra vez con una fecha nueva',
+        );
+      }
       return { contrato, args: argumentosCrearV2(direccion, proveedor, BigInt(pedido.numero), plan) };
     }
 

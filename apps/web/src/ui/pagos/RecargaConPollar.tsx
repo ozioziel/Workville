@@ -125,7 +125,11 @@ export default function RecargaConPollar({
             onAcreditada?.();
           }
         })
-        .catch((e: unknown) => setError(mensajeDeError(e)));
+        .catch((e: unknown) => {
+          // Si el aviso no llegó, la próxima lectura de la orden lo vuelve a mandar.
+          if (ultimoEstado.current === clave) ultimoEstado.current = null;
+          setError(mensajeDeError(e));
+        });
     },
     [onAcreditada],
   );
@@ -222,6 +226,12 @@ export default function RecargaConPollar({
           <span className="pequeno">Llegaron {formatoUsdc(vista.recibes.monto)} USDC a tu wallet. Ahora confirma el pago con el botón de arriba.</span>
         )}
 
+        {/* La orden terminó en Pollar pero WorkVille no se enteró (por ejemplo, sin conexión): se vuelve a leer y a avisar. */}
+        {vista.estado === 'completada' && error && (
+          <button type="button" className="boton boton-chico" disabled={Boolean(ocupado)} onClick={() => accion('Revisando…', () => cliente.getRampOrder(vista.id))}>
+            {ocupado ?? 'Volver a revisar'}
+          </button>
+        )}
         {vista.falla && <Aviso tipo={vista.reintentable ? 'aviso' : 'peligro'}>{vista.falla}</Aviso>}
         {vista.falla && vista.detenida && vista.reintentable && (
           <button type="button" className="boton boton-chico" disabled={Boolean(ocupado)} onClick={() => accion('Reintentando…', () => reintentar(cliente, vista.id))}>

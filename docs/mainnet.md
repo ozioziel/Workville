@@ -56,14 +56,19 @@ WorkVille v2 está **preparado** para mainnet, pero **todavía no se lanzó**. E
 | RPC de Stellar mainnet | `STELLAR_RPC_URL` | Un proveedor de RPC de mainnet (el de la SDF es solo para testnet) |
 | Didit (KYC) | `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`, `DIDIT_WEBHOOK_SECRET`, `KYC_HMAC_SECRET` | Obligatorio en mainnet. `KYC_HMAC_SECRET` nuevo y largo: si cambia, las huellas viejas dejan de coincidir |
 | Mux (videos) | `MUX_*` | Llaves de producción y una llave de firma para los videos privados |
-| Pollar (entrar con Google o correo, rampa del QR del banco) | `POLLAR_API_KEY` | Llave de producción |
+| Pollar (entrar con Google o correo, rampa del QR del banco) | `POLLAR_API_KEY` | La llave `pub_mainnet_…`, que existe solo después de que Pollar apruebe el acceso a mainnet |
 | WalletConnect (QR) | `WALLETCONNECT_PROJECT_ID` | |
 | Resend (correos) | `RESEND_API_KEY`, `CORREO_REMITENTE` | Dominio propio verificado |
 | Web Push | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACTO` | Llaves nuevas: `npx web-push generate-vapid-keys` |
 
 - [ ] `ENTORNO_SERVICIOS=produccion` (Didit, Mux y Pollar sin sandbox).
-- [ ] `RAMPA_SIMULADA` vacío (la API no arranca si dice `si`). Revisar todo lo de [simulaciones.md](simulaciones.md): la rampa real de Pollar para Bolivia, el retiro al banco y el login con Google, probados con cuentas reales.
-- [ ] Pollar (**Build → Domains**): el dominio de producción, para que funcione «Entrar con Google».
+- [ ] `RAMPA_PROVEEDOR` vacío o `pollar`, y `RAMPA_SIMULADA` vacío: con la rampa simulada (`RAMPA_PROVEEDOR=simulada` o `RAMPA_SIMULADA=si`) la API no arranca en mainnet. `RAMPA_POLLAR_PAISES` vacío (Bolivia) o con países que no sean solo del sandbox (Perú y Colombia hacen fallar el arranque). Revisar todo lo de [simulaciones.md](simulaciones.md): la rampa real de Pollar para Bolivia, el retiro al banco y el login con Google, probados con cuentas reales.
+- [ ] Pollar (**Build → Domains**): el dominio de producción en **Allowed origins** (sin eso el SDK responde `Origin not allowed` y no funciona ni el correo) y en **Allowed redirect URIs** (sin eso Google responde `APPLICATION_HAS_NO_REDIRECT_URIS`).
+- [ ] Pollar: pedir el acceso a mainnet (Build → Settings → Request Mainnet access); lo aprueba Pollar. Su lista completa: [Mainnet Checklist](https://docs.pollar.xyz/docs/guides/mainnet-checklist).
+- [ ] Pollar: en mainnet la custodia es **Turnkey** (co-firmada 2 de 2 o autocustodia 1 de 1); Pollar no guarda llaves. Falta en WorkVille: agregar un método de recuperación (sin él la wallet responde `SDK_WALLET_RECOVERY_REQUIRED`), aprobar la co-firma (`cosign_pending`), la wallet que se está creando (`provisioning: 'CREATING'`) y entrar desde un dispositivo nuevo.
+- [ ] Textos legales: hoy dicen «Pollar guarda tu llave cifrada», que vale para testnet. Con Turnkey hay que cambiarlo (la llave queda en Turnkey y la credencial en el dispositivo de la persona) y subir la versión en `packages/shared/src/legal.ts`.
+- [ ] Pollar: comisiones de red. Las wallets nuevas no tienen XLM; Pollar las patrocina (Wallets → Sponsorship, con reglas por contrato y función) cuando envía la transacción. WorkVille la envía desde su API: confirmar con Pollar si el patrocinio se aplica igual o pasar a `signAndSubmitTx` para quienes entran con correo.
+- [ ] Pollar: pagar la red (créditos o wallets propias con XLM, con alerta de saldo bajo) y, para la ruta de Bolivia, la wallet de gas de Polygon con POL.
 
 ## 5. Servidor
 

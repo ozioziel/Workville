@@ -73,6 +73,12 @@ describe('por etapas: el plan se acuerda antes de pagar', () => {
     const aceptado = await t.http().post(`/api/pedidos/${id}/plan/aceptar`).set(con(cli)).expect(200);
     expect(aceptado.body.plan_aceptado_en).toBeTruthy();
     await t.http().post(`/api/pedidos/${id}/plan`).set(con(prov)).send({ fases: plan([50, 50]) }).expect(409);
+    // Si una fecha del plan aceptado pasa sin que se pague, el contrato ya no lo acepta: el proveedor puede corregirlo
+    // y el cliente lo tiene que aceptar otra vez.
+    await t.prisma.fase.updateMany({ where: { pedido_id: id, numero: 0 }, data: { fecha_limite: new Date(Date.now() - DIA) } });
+    const replan = await t.http().post(`/api/pedidos/${id}/plan`).set(con(prov)).send({ fases: plan([20, 30, 50]) }).expect(200);
+    expect(replan.body.plan_aceptado_en).toBeNull();
+    await t.http().post(`/api/pedidos/${id}/plan/aceptar`).set(con(cli)).expect(200);
     const pasos = await t.prisma.pasoPedido.findMany({ where: { pedido_id: id } });
     expect(pasos.map((p) => p.accion)).toContain('aceptar_plan');
 
