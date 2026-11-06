@@ -62,6 +62,27 @@ export function simularPagoDelBanco(id: string): Promise<Rampa> {
   return api<Rampa>(`/rampas/entradas/${id}/simular-pago`, { cuerpo: {} });
 }
 
+/** Rampa con Pollar: registra en WorkVille la orden que se creó con el SDK de Pollar (la misma orden, la misma fila). */
+export function registrarOrdenPollar(d: {
+  orden_id: string;
+  direccion: string;
+  pais: string;
+  moneda: string;
+  monto_usdc: string;
+  monto_local: string;
+  comision_local: string;
+  estado: string;
+  expira_en?: string;
+  pedido_id?: string;
+}): Promise<Rampa> {
+  return api<Rampa>('/rampas/pollar/ordenes', { cuerpo: { sentido: 'entrada', ...d } });
+}
+
+/** Rampa con Pollar: avisa un cambio de estado. Al completarse va la transacción del USDC, que la API lee en la red. */
+export function avisarEstadoPollar(id: string, estado: string, txHash?: string | null): Promise<Rampa> {
+  return api<Rampa>(`/rampas/pollar/ordenes/${id}/estado`, { cuerpo: { estado, ...(txHash ? { tx_hash: txHash } : {}) } });
+}
+
 export function crearRetiro(datos: { monto_usdc: string; direccion: string; banco: string; cuenta: string }): Promise<Rampa> {
   return api<Rampa>('/rampas/salidas', { cuerpo: datos });
 }
