@@ -21,6 +21,8 @@ const ANCHO_ESCRITORIO = 1440;
 const ANCHO_CELULAR = 390;
 const ZOOM_MAXIMO_CELULAR = 1.6;
 const SEGUNDOS_POR_DIA = 86400;
+/** Lo que sube desde abajo la primera vez que llega a la pantalla. */
+const QUE_APARECE = '.si-bloque, .si-arte, .si-forma, .si-cartel, .si-ejemplo, .si-numeros li';
 
 interface Props {
   pagina: PaginaSitio;
@@ -82,6 +84,24 @@ export function Sitio({ pagina, irA, onElegir, onLegal }: Props) {
   useEffect(() => {
     raiz.current?.scrollTo(0, 0);
     raiz.current?.focus({ preventScroll: true });
+  }, [pagina]);
+
+  // Marca cada bloque cuando entra en pantalla; sitio.css hace el resto.
+  useEffect(() => {
+    const div = raiz.current;
+    if (!div) return;
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+          entrada.target.classList.add('si-visto');
+          observador.unobserve(entrada.target);
+        }
+      },
+      { root: div, rootMargin: '0px 0px -6% 0px' },
+    );
+    div.querySelectorAll(QUE_APARECE).forEach((elemento) => observador.observe(elemento));
+    return () => observador.disconnect();
   }, [pagina]);
 
   useEffect(() => {
