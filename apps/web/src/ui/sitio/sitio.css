@@ -479,6 +479,76 @@
   letter-spacing: -0.02em;
 }
 
+/*
+ * ---------- Entrada ----------
+ * Los mismos movimientos de la portada (portada.css): el texto sube y aparece; el arte sube con un pequeño rebote.
+ * Se anima lo de dentro de cada pieza porque la pieza ya usa `translate` para su propio vaivén.
+ * Sin esta regla, quien pide menos movimiento ve todo desde el principio.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .si-bloque:not(.si-visto) > *,
+  .si-forma:not(.si-visto),
+  .si-cartel:not(.si-visto),
+  .si-ejemplo:not(.si-visto),
+  .si-numeros li:not(.si-visto),
+  .si-arte:not(.si-visto) > .si-dialogo,
+  .si-arte:not(.si-visto) > .si-pieza > :is(img, .si-edificio-dentro) {
+    opacity: 0;
+  }
+}
+.si-bloque.si-visto > *,
+.si-forma.si-visto,
+.si-cartel.si-visto,
+.si-ejemplo.si-visto,
+.si-numeros li.si-visto,
+.si-arte.si-visto > .si-dialogo {
+  animation: pt-texto-entra 0.55s ease-out var(--espera, 0s) both;
+}
+.si-arte.si-visto > .si-pieza > :is(img, .si-edificio-dentro) {
+  animation:
+    pt-edificio-sube 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) var(--espera-arte, 0.1s) both,
+    pt-aparece 0.3s ease-out var(--espera-arte, 0.1s) both;
+}
+.si-arte > .si-pieza:nth-child(3n + 2) {
+  --espera-arte: 0.2s;
+}
+.si-arte > .si-pieza:nth-child(3n) {
+  --espera-arte: 0.3s;
+}
+.si-bloque > :nth-child(2),
+.si-forma:nth-child(2),
+.si-cartel:nth-child(2),
+.si-numeros li:nth-child(3n + 2) {
+  --espera: 0.15s;
+}
+.si-bloque > :nth-child(3),
+.si-forma:nth-child(3),
+.si-cartel:nth-child(3),
+.si-numeros li:nth-child(3n) {
+  --espera: 0.3s;
+}
+.si-bloque > :nth-child(4) {
+  --espera: 0.45s;
+}
+/* El héroe marca el ritmo de la portada: título, párrafo y botones, uno tras otro. */
+.si-heroe > .si-bloque > :nth-child(1) {
+  --espera: 0.15s;
+}
+.si-heroe > .si-bloque > :nth-child(2) {
+  --espera: 0.45s;
+}
+.si-heroe > .si-bloque > :nth-child(3) {
+  --espera: 0.7s;
+}
+.si-heroe {
+  animation: si-fondo 0.5s ease-out;
+}
+@keyframes si-fondo {
+  from {
+    background-color: var(--papel);
+  }
+}
+
 /* ---------- Pie ---------- */
 .si-pie {
   background: var(--tinta);
