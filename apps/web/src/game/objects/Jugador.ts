@@ -25,6 +25,23 @@ export class Jugador extends Phaser.Physics.Arcade.Sprite {
     this.ajustar(resolucion);
   }
 
+  /** Cae con un pequeño rebote al llegar desde la portada. Solo cambia el dibujo: la posición no se mueve. */
+  aterrizar(): void {
+    const cuerpo = this.body as Phaser.Physics.Arcade.Body;
+    cuerpo.enable = false;
+    this.scene.tweens.addCounter({
+      from: 1.22,
+      to: 1,
+      duration: 450,
+      ease: 'Back.Out',
+      onUpdate: (t) => this.setOrigin(0.5, t.getValue() ?? 1),
+      onComplete: () => {
+        this.setOrigin(0.5, 1);
+        cuerpo.enable = true;
+      },
+    });
+  }
+
   /** Mueve según una dirección normalizada (-1..1 en cada eje). */
   mover(dx: number, dy: number): void {
     const largo = Math.hypot(dx, dy);
