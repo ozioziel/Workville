@@ -13,7 +13,7 @@ import {
   type Barrio,
   type DatosDocumento,
 } from '@cryptoville/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { esTactil } from './lib/dispositivo';
 import { edificioCentral } from './arte/villa';
 import { seBuscaEnMapa, type BusquedaPublica } from './features/busquedas/datos';
@@ -24,14 +24,19 @@ import { PersonasEnLinea } from './features/cercania/PersonasEnLinea';
 import { ChatCercania } from './ui/chat/ChatCercania';
 import { emitir, escuchar, type ModoVilla, type Puerta } from './game/EventBus';
 import { PhaserGame } from './game/PhaserGame';
+import { modoGuardado } from './game/villaInicial';
 import { cargarConfig, obtenerConfig, type ConfigPublica } from './lib/config';
 import { api, mensajeDeError } from './lib/api';
+import { modoDeRuta, rutaDeModo } from './lib/rutas';
 import { Avatar } from './ui/components/basicos';
 import { Icono, LogoIcono } from './ui/components/Iconos';
 import { Joystick } from './ui/components/Joystick';
 import { Panel } from './ui/components/Panel';
 import { ProveedorEstado, useEstado, type PanelAbierto } from './ui/estado';
 import { portadaDe } from './ui/villas';
+import { esEnlaceDirecto, type AccionPortada } from './ui/portada/fases';
+import { Portada } from './ui/portada/Portada';
+import { usePortada } from './ui/portada/usePortada';
 import { PanelArbitro } from './ui/panels/PanelArbitro';
 import { PanelAvisos } from './ui/panels/PanelAvisos';
 import { PanelBienvenida } from './ui/panels/PanelBienvenida';
@@ -161,6 +166,46 @@ function Pueblo() {
   }, [enPedidos, usuario]);
   const enTestnet = obtenerConfig().red === 'testnet';
 
+  // Portada: lo que dice el botón decide con qué modo se llega a la villa, y la dirección cambia con él.
+  const alElegirPortada = useCallback(
+    (accion: AccionPortada) => {
+      try {
+        localStorage.setItem('cryptoville-visto', '1');
+      } catch {
+        // Sin almacenamiento local: se volverá a mostrar la bienvenida.
+      }
+      const destino = accion === 'contratar' || accion === 'trabajar' ? accion : modo;
+      history.pushState(null, '', rutaDeModo(destino));
+      if (destino === modo) return false;
+      cambiarModo(destino);
+      return true;
+    },
+    [modo, cambiarModo],
+  );
+  const { fase: fasePortada, elegir: elegirPortada, activa: portadaActiva, mostrarAlInicio: portadaAlInicio } = usePortada({
+    alElegir: alElegirPortada,
+    alTerminarDeAbrir: (accion) => {
+      if (accion === 'entrar' && !usuario) abrir({ tipo: 'bienvenida' });
+    },
+    alVolverAPortada: () => {
+      // Lo que quedó abierto no debe seguir ahí al volver a entrar, salvo los documentos legales, que son obligatorios.
+      if (panel?.tipo !== 'aceptar-legal') cerrar();
+    },
+    alVolverAVilla: (m) => {
+      if (m !== modo) cambiarModo(m);
+    },
+  });
+  // Mientras la portada o las nubes tapan la villa, el personaje no se mueve ni se puede llegar a la interfaz con el teclado.
+  const portadaTapa = portadaActiva && fasePortada !== 'pista';
+  useEffect(() => {
+    emitir('controles', !portadaTapa && !hayPanel.current);
+  }, [portadaTapa]);
+
+  // Dentro de la villa, la dirección sigue al modo (el interruptor de arriba, «ir al local»…). En `/` no se toca.
+  useEffect(() => {
+    if (modoDeRuta(location.pathname) && location.pathname !== rutaDeModo(modo)) history.pushState(null, '', rutaDeModo(modo));
+  }, [modo]);
+
   // Enlaces que llegan por correo o notificación: ?pedido=…, ?se-busca=…, ?kyc=volver, ?correo=… (una sola vez).
   useEffect(() => {
     const p = new URLSearchParams(location.search);
@@ -168,7 +213,8 @@ function Pueblo() {
     const pedido = p.get('pedido');
     const seBusca = p.get('se-busca');
     const correo = p.get('correo');
-    history.replaceState(null, '', location.pathname);
+    // Un enlace directo abre la villa, sin portada: la dirección pasa a ser la de esa villa.
+    history.replaceState(null, '', esEnlaceDirecto(location.search) ? rutaDeModo(modoGuardado()) : location.pathname);
     if (pedido && /^[0-9a-f-]{36}$/i.test(pedido)) abrir({ tipo: 'pedido', id: pedido });
     else if (seBusca && /^[0-9a-f-]{36}$/i.test(seBusca)) abrir({ tipo: 'busqueda', id: seBusca });
     if (correo && /^[0-9a-f]{48}$/.test(correo)) {
@@ -221,11 +267,11 @@ function Pueblo() {
   // Primera visita: bienvenida.
   useEffect(() => {
     try {
-      if (!localStorage.getItem('cryptoville-visto')) abrir({ tipo: 'bienvenida' });
+      if (!portadaAlInicio && !localStorage.getItem('cryptoville-visto')) abrir({ tipo: 'bienvenida' });
     } catch {
-      abrir({ tipo: 'bienvenida' });
+      if (!portadaAlInicio) abrir({ tipo: 'bienvenida' });
     }
-  }, [abrir]);
+  }, [abrir, portadaAlInicio]);
 
   // Eventos que vienen del juego.
   const localesRef = useRef(locales);
@@ -241,6 +287,8 @@ function Pueblo() {
   aparienciaRef.current = usuario ? aparienciaDeUsuario(usuario) : aparienciaDeAvatar(AVATAR_INVITADO);
   const hayPanel = useRef(false);
   hayPanel.current = panel !== null;
+  const portadaTapaRef = useRef(portadaTapa);
+  portadaTapaRef.current = portadaTapa;
   useEffect(() => {
     const quitar = [
       escuchar('cerca-de-puerta', setPuertaCercana),
@@ -314,7 +362,7 @@ function Pueblo() {
         emitir('modo', modoRef.current);
         emitir('apariencia', aparienciaRef.current);
         // La escena recién creada no sabe si hay un panel abierto (por ejemplo, la bienvenida).
-        emitir('controles', !hayPanel.current);
+        emitir('controles', !hayPanel.current && !portadaTapaRef.current);
       }),
     ];
     return () => quitar.forEach((f) => f());
@@ -369,14 +417,18 @@ function Pueblo() {
   };
 
   return (
-    <div className={`app ${enTestnet ? 'con-franja' : ''}`}>
+    <div
+      className={`app ${enTestnet ? 'con-franja' : ''}`}
+      data-llegada={fasePortada === 'abriendo' || fasePortada === 'pista' ? fasePortada : undefined}
+    >
       <PhaserGame />
+      {portadaActiva && <Portada fase={fasePortada} lugar={lugar} red={obtenerConfig().red} tactil={tactil} onElegir={elegirPortada} />}
       {enTestnet && (
         <div className="franja-red" role="status">
           Modo de prueba: el dinero no es real
         </div>
       )}
-      <header className={`barra ${usuario ? 'con-sesion' : ''}`}>
+      <header className={`barra ${usuario ? 'con-sesion' : ''}`} inert={portadaTapa}>
         <div className="barra-lado">
           <button type="button" className="pastilla logo" onClick={() => abrir({ tipo: 'bienvenida' })} aria-label="WorkVille: ¿cómo funciona?">
             <LogoIcono />
@@ -479,7 +531,7 @@ function Pueblo() {
         </div>
       </header>
 
-      <nav className="villas" aria-label="Villas">
+      <nav className="villas" aria-label="Villas" inert={portadaTapa}>
         {/* La Plaza principal (CVs) va primera y solo en «Quiero contratar». */}
         {lugares.map((b) => {
           const activa = b === lugar;

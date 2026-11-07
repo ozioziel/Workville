@@ -5,6 +5,7 @@ import { Arranque } from './scenes/Arranque';
 import { Interior } from './scenes/Interior';
 import { Villa } from './scenes/Villa';
 import { obtenerConfig } from '../lib/config';
+import { escuchar } from './EventBus';
 import { modoGuardado, villaGuardada } from './villaInicial';
 
 /** Densidad de la pantalla (con tope, para no crear lienzos gigantes). */
@@ -66,11 +67,17 @@ export function PhaserGame() {
       if (import.meta.env.DEV) (window as unknown as { __juego?: Phaser.Game }).__juego = juego;
     }, 0);
 
+    const quitarDormir = escuchar('juego-dormir', (dormir) => {
+      if (dormir) juego?.loop.sleep();
+      else juego?.loop.wake();
+    });
+
     const observador = new ResizeObserver(ajustar);
     observador.observe(div);
     window.addEventListener('resize', ajustar);
     return () => {
       clearTimeout(espera);
+      quitarDormir();
       observador.disconnect();
       window.removeEventListener('resize', ajustar);
       juego?.destroy(true);

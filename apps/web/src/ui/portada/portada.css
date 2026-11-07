@@ -1,0 +1,991 @@
+/*
+ * Portada «Amanece en la villa» y transición por las nubes.
+ * Tiempos y valores: marcos «1 / Amanece en la villa» y «1b / Transición a la villa» de Figma.
+ * Se animan solo transform y opacity; la regla global de movimiento reducido apaga todo esto.
+ */
+.portada {
+  --fuente-titulo: 'Caprasimo', Georgia, serif;
+  --fuente-marca: 'Bricolage Grotesque', var(--fuente);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: #bfe3f2;
+  animation: pt-cielo 4.5s cubic-bezier(0.42, 0, 0.58, 1) both;
+  color: var(--tinta);
+}
+.portada[data-fase='abriendo'],
+.portada[data-fase='pista'] {
+  background: transparent;
+  animation: none;
+}
+.portada[data-fase='pista'] {
+  pointer-events: none;
+}
+
+@keyframes pt-cielo {
+  from {
+    background-color: #f9cfa8;
+  }
+  to {
+    background-color: #bfe3f2;
+  }
+}
+
+/* ---------- Paisaje ---------- */
+.pt-escena {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1440px;
+  height: 900px;
+  transform-origin: 0 100%;
+  transform: translateX(var(--pt-x, 0)) scale(var(--pt-escala, 1));
+  user-select: none;
+}
+.pt-camara {
+  position: absolute;
+  inset: 0;
+  transform-origin: 720px 450px;
+}
+.pt-pieza {
+  position: absolute;
+  display: block;
+}
+.pt-capa,
+.pt-pieza > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pt-capa > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.pt-cuadro {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pt-letrero {
+  position: absolute;
+  translate: -50% 0;
+  font: 600 13px/19px var(--fuente);
+  white-space: nowrap;
+}
+.pt-letrero-edificio {
+  translate: -50% -50%;
+  font: 700 17px/21px var(--fuente);
+}
+.pt-calle {
+  left: -4px;
+  top: 770px;
+  width: 1448px;
+  height: 90px;
+  background: #dcd1bf;
+  border: 2.5px solid var(--tinta);
+}
+.pt-linea-calle {
+  left: 16px;
+  top: 813px;
+  width: 1404px;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, #fdf6e3 0 44px, transparent 44px 80px);
+}
+.pt-pasto {
+  left: 0;
+  top: 861px;
+  width: 1440px;
+  height: 60px;
+  background: #c8e4ad;
+}
+.pt-luz {
+  position: absolute;
+  inset: -40px;
+  background: #f59e6b;
+  opacity: 0;
+  pointer-events: none;
+  animation: pt-luz 4.5s cubic-bezier(0.42, 0, 0.58, 1) both;
+}
+@keyframes pt-luz {
+  from {
+    opacity: 0.32;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------- Sol ---------- */
+.pt-halo {
+  position: absolute;
+  border-radius: 50%;
+  animation:
+    pt-sol-entra 4s ease-out both,
+    pt-halo-escala 3s ease-in-out var(--inicio) infinite alternate,
+    pt-halo-entra var(--inicio) ease-in-out both,
+    pt-halo-luz 3s ease-in-out var(--inicio) infinite alternate;
+}
+.pt-halo-grande {
+  --inicio: 5.2s;
+  left: 775px;
+  top: 25px;
+  width: 390px;
+  height: 390px;
+  background: #fdf0c2;
+}
+.pt-halo-chico {
+  --inicio: 4s;
+  left: 820px;
+  top: 70px;
+  width: 300px;
+  height: 300px;
+  background: #fde9a8;
+}
+.pt-sol-sube {
+  animation: pt-sol-entra 4s ease-out both;
+}
+.pt-sol-late {
+  animation: pt-sol-late 1.5s ease-in-out 4s infinite alternate;
+}
+.pt-sol-gira {
+  animation: pt-sol-gira 60s linear infinite;
+}
+@keyframes pt-sol-entra {
+  from {
+    translate: 0 300px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes pt-sol-late {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.07;
+  }
+}
+@keyframes pt-sol-gira {
+  to {
+    rotate: -360deg;
+  }
+}
+@keyframes pt-halo-escala {
+  from {
+    scale: 1.1;
+  }
+  to {
+    scale: 0.92;
+  }
+}
+@keyframes pt-halo-entra {
+  from {
+    opacity: 0;
+    scale: 0.9;
+  }
+  to {
+    opacity: 0.75;
+    scale: 1.1;
+  }
+}
+@keyframes pt-halo-luz {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 0.18;
+  }
+}
+
+/* ---------- Cielo: nubes, aves y globo ---------- */
+.pt-nube {
+  animation:
+    pt-nube-viaje 15s linear var(--retraso, 0s) infinite,
+    pt-nube-luz 15s linear var(--retraso, 0s) infinite;
+}
+@keyframes pt-nube-viaje {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 800px 0;
+  }
+}
+@keyframes pt-nube-luz {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  100% {
+    opacity: 1;
+  }
+}
+.pt-globo-x {
+  animation: pt-globo-x 30s ease-in-out infinite;
+}
+.pt-globo-sube {
+  animation: pt-globo-sube 3.5s ease-out both;
+}
+.pt-globo-y {
+  animation: pt-vaiven-18 3s ease-in-out -1.5s infinite alternate;
+}
+@keyframes pt-globo-x {
+  50% {
+    translate: -220px 0;
+  }
+}
+@keyframes pt-globo-sube {
+  from {
+    translate: 0 160px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes pt-vaiven-18 {
+  from {
+    translate: 0 -18px;
+  }
+  to {
+    translate: 0 18px;
+  }
+}
+.pt-ave {
+  animation:
+    pt-ave-viaje 15s linear var(--retraso, 0s) infinite,
+    pt-ave-luz 15s linear var(--retraso, 0s) infinite;
+}
+.pt-ave-y {
+  animation: pt-ave-y 3s ease-in-out infinite alternate;
+}
+@keyframes pt-ave-viaje {
+  to {
+    translate: 860px 0;
+  }
+}
+@keyframes pt-ave-luz {
+  0% {
+    opacity: 0;
+  }
+  5.33%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes pt-ave-y {
+  from {
+    translate: 0 -16px;
+  }
+  to {
+    translate: 0 16px;
+  }
+}
+.pt-aleteo-a {
+  animation: pt-dos-a 0.5s step-end var(--retraso, 0s) infinite;
+}
+.pt-aleteo-b {
+  animation: pt-dos-b 0.5s step-end var(--retraso, 0s) infinite;
+}
+@keyframes pt-dos-a {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes pt-dos-b {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- Teleférico ---------- */
+.pt-cabina {
+  animation:
+    pt-cabina-viaje 15s linear var(--retraso, 0s) infinite,
+    pt-cabina-luz 15s linear var(--retraso, 0s) infinite,
+    pt-cabina-vaiven 2.4s ease-in-out infinite alternate;
+  transform-origin: 50% 0;
+}
+@keyframes pt-cabina-viaje {
+  to {
+    translate: 900px -315px;
+  }
+}
+@keyframes pt-cabina-luz {
+  0% {
+    opacity: 0;
+  }
+  4.67%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes pt-cabina-vaiven {
+  from {
+    rotate: -1.8deg;
+  }
+  to {
+    rotate: 1.8deg;
+  }
+}
+
+/* ---------- Edificios que aparecen al cargar ---------- */
+.pt-edificio {
+  animation:
+    pt-edificio-sube 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) var(--retraso) both,
+    pt-aparece 0.3s ease-out var(--retraso) both;
+}
+@keyframes pt-edificio-sube {
+  from {
+    translate: 0 70px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes pt-aparece {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- Viento ---------- */
+.pt-arbol,
+.pt-arbol-2,
+.pt-flor-1,
+.pt-flor-2,
+.pt-flor-3,
+.pt-banderines {
+  animation: pt-viento var(--viento, 2s) ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+  --giro: 1.6deg;
+}
+.pt-arbol-2 {
+  --viento: 2.3s;
+}
+.pt-flor-1 {
+  --giro: 3deg;
+}
+.pt-flor-2 {
+  --giro: 3deg;
+  --viento: 2.3s;
+}
+.pt-flor-3 {
+  --giro: 3deg;
+  --viento: 2.6s;
+}
+.pt-banderines {
+  --giro: 1.2deg;
+  --viento: 2.5s;
+  transform-origin: 50% 0;
+}
+@keyframes pt-viento {
+  from {
+    rotate: calc(var(--giro) * -1);
+  }
+  to {
+    rotate: var(--giro);
+  }
+}
+
+/* ---------- Vida en la calle ---------- */
+.pt-humo {
+  opacity: 0;
+  animation:
+    pt-humo-sube 3.75s linear var(--retraso, 0s) infinite,
+    pt-humo-crece 3.75s ease-out var(--retraso, 0s) infinite,
+    pt-humo-luz 3.75s linear var(--retraso, 0s) infinite;
+}
+@keyframes pt-humo-sube {
+  0% {
+    translate: 0 0;
+  }
+  80%,
+  100% {
+    translate: 0 -58px;
+  }
+}
+@keyframes pt-humo-crece {
+  0% {
+    scale: 0.7;
+  }
+  80%,
+  100% {
+    scale: 1.7;
+  }
+}
+@keyframes pt-humo-luz {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  80%,
+  100% {
+    opacity: 0;
+  }
+}
+.pt-gato {
+  animation: pt-gato 6s linear 5s infinite;
+}
+@keyframes pt-gato {
+  0% {
+    translate: 0 0;
+    animation-timing-function: ease-out;
+  }
+  4.17% {
+    translate: 0 -22px;
+    animation-timing-function: ease-in;
+  }
+  9.17%,
+  100% {
+    translate: 0 0;
+  }
+}
+.pt-camina-der {
+  animation: pt-camina-der 15s linear var(--retraso, 0s) infinite;
+}
+.pt-camina-izq {
+  animation: pt-camina-izq 15s linear var(--retraso, 0s) infinite;
+}
+@keyframes pt-camina-der {
+  to {
+    translate: 1680px 0;
+  }
+}
+@keyframes pt-camina-izq {
+  to {
+    translate: -1680px 0;
+  }
+}
+.pt-paso {
+  opacity: 0;
+  animation: pt-paso 0.6s step-end var(--retraso, 0s) infinite;
+}
+@keyframes pt-paso {
+  0% {
+    opacity: 1;
+  }
+  25%,
+  100% {
+    opacity: 0;
+  }
+}
+.pt-perro-y {
+  animation: pt-perro 0.2s ease-in-out infinite alternate;
+}
+@keyframes pt-perro {
+  to {
+    translate: 0 -7px;
+  }
+}
+.pt-mariposa-x {
+  animation: pt-mariposa-x 30s ease-in-out infinite;
+}
+.pt-mariposa-y {
+  animation: pt-mariposa-y 2s ease-in-out infinite alternate;
+}
+@keyframes pt-mariposa-x {
+  33.33% {
+    translate: 260px 0;
+  }
+  66.66% {
+    translate: 60px 0;
+  }
+}
+@keyframes pt-mariposa-y {
+  from {
+    translate: 0 -24px;
+  }
+  to {
+    translate: 0 24px;
+  }
+}
+.pt-batido-a {
+  animation: pt-dos-a 0.3s step-end infinite;
+}
+.pt-batido-b {
+  animation: pt-dos-b 0.3s step-end infinite;
+}
+
+/* ---------- Franja, navegación y textos ---------- */
+.pt-franja {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tinta);
+  color: var(--crema);
+  font: 600 13px var(--fuente);
+}
+.pt-nav {
+  position: absolute;
+  left: calc(80px * var(--pt-texto, 1));
+  right: calc(80px * var(--pt-texto, 1));
+  top: calc(44px * var(--pt-texto, 1));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pt-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 calc(26px * var(--pt-texto, 1)) var(--fuente-marca);
+}
+.pt-enlaces {
+  display: flex;
+  align-items: center;
+  gap: calc(32px * var(--pt-texto, 1));
+  /* El paisaje se recorta según el alto de la ventana: el sol o el globo pueden quedar detrás del menú. */
+  padding: 6px 6px 6px 20px;
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.88);
+}
+.pt-enlace {
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font: 500 max(14px, calc(16px * var(--pt-texto, 1))) var(--fuente);
+  cursor: pointer;
+}
+.pt-enlace:hover {
+  text-decoration: underline;
+}
+.pt-textos {
+  position: absolute;
+  left: calc(80px * var(--pt-texto, 1));
+  top: calc(112px * var(--pt-texto, 1));
+  width: calc(720px * var(--pt-texto, 1));
+}
+.pt-titulo {
+  margin: 0;
+  font: 400 calc(70px * var(--pt-texto, 1)) / 1.02 var(--fuente-titulo);
+  letter-spacing: -0.01em;
+  animation: pt-texto-entra 0.55s ease-out 0.5s both;
+}
+.pt-parrafo {
+  width: calc(560px * var(--pt-texto, 1));
+  margin: calc(16px * var(--pt-texto, 1)) 0 0;
+  font: 500 max(14px, calc(20px * var(--pt-texto, 1))) / 1.5 var(--fuente);
+  animation: pt-texto-entra 0.55s ease-out 0.8s both;
+}
+.pt-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: calc(20px * var(--pt-texto, 1));
+  animation: pt-texto-entra 0.55s ease-out 1.05s both;
+}
+@keyframes pt-texto-entra {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.pt-boton {
+  min-height: 44px;
+  height: calc(55px * var(--pt-texto, 1));
+  padding: 0 calc(26px * var(--pt-texto, 1));
+  border: 2.5px solid var(--tinta);
+  border-radius: 12px;
+  background: var(--papel);
+  color: var(--tinta);
+  font: 700 max(14px, calc(16px * var(--pt-texto, 1))) var(--fuente);
+  cursor: pointer;
+  transition: transform 160ms ease-out;
+}
+.pt-boton:hover {
+  background: var(--crema);
+}
+.pt-boton:active {
+  transform: scale(0.97);
+}
+.pt-boton-principal {
+  background: var(--tinta);
+  color: var(--crema);
+}
+.pt-boton-principal:hover {
+  background: #52403a;
+}
+.pt-mirar {
+  padding: 8px 4px;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font: 500 max(14px, calc(16px * var(--pt-texto, 1))) var(--fuente);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.portada :is(button, a):focus-visible {
+  outline: none;
+  box-shadow: var(--foco);
+  border-radius: 8px;
+}
+.pt-solo-movil {
+  display: none;
+}
+
+/* ---------- Salida: desaparecen los textos y se acerca la cámara ---------- */
+.portada:not([data-fase='portada']) :is(.pt-nav, .pt-titulo, .pt-parrafo, .pt-acciones) {
+  pointer-events: none;
+  animation: pt-texto-sale 0.28s ease-out 0.12s both;
+}
+@keyframes pt-texto-sale {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -18px;
+  }
+}
+.portada[data-fase='saliendo'] .pt-camara,
+.portada[data-fase='cubierta'] .pt-camara {
+  animation: pt-acercar 1.15s ease-in-out 0.15s both;
+}
+@keyframes pt-acercar {
+  to {
+    scale: 1.55;
+    translate: 0 -210px;
+  }
+}
+
+/* ---------- Cortina de nubes ---------- */
+.pt-cortina {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pt-velo {
+  position: absolute;
+  inset: 0;
+  background: #fffdf6;
+  animation: pt-velo-cierra 0.42s ease-in-out 0.9s both;
+}
+@keyframes pt-velo-cierra {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.pt-anillo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1440px;
+  height: 900px;
+  translate: -50% -50%;
+  scale: var(--pt-cortina, 1);
+}
+.pt-nube-cortina {
+  position: absolute;
+  animation: pt-nube-entra 0.95s ease-in-out var(--entrada) both;
+}
+@keyframes pt-nube-entra {
+  from {
+    translate: var(--lado) 0;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+.pt-llegando {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  animation: pt-aparece 0.2s ease-out 1.25s both;
+}
+.pt-cable-llegada {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 150px);
+  height: 4px;
+  background: var(--tinta);
+}
+.pt-cabina-llegada {
+  position: absolute;
+  left: calc(50% - 80px);
+  top: calc(50% - 154px);
+  width: 160px;
+  height: 208px;
+  transform-origin: 50% 0;
+  animation: pt-cabina-llega 0.95s ease-out 1.25s both;
+}
+@keyframes pt-cabina-llega {
+  from {
+    translate: -720px 0;
+    rotate: -3deg;
+  }
+  to {
+    translate: 0 0;
+    rotate: 2.5deg;
+  }
+}
+.pt-texto-llegando {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(50% + 85px);
+  margin: 0;
+  text-align: center;
+  font: 400 clamp(28px, 4vw, 44px) / 1.15 var(--fuente-titulo);
+}
+
+/* ---------- Se abren las nubes ---------- */
+.portada[data-fase='abriendo'] .pt-velo {
+  animation: pt-velo-abre 0.28s ease-out both;
+}
+@keyframes pt-velo-abre {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.portada[data-fase='abriendo'] .pt-nube-cortina {
+  animation: pt-nube-sale 0.9s ease-in-out var(--salida) both;
+}
+@keyframes pt-nube-sale {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: var(--lado) 0;
+  }
+}
+.portada[data-fase='abriendo'] .pt-llegando {
+  animation: pt-velo-abre 0.17s ease-out both;
+}
+.app[data-llegada='abriendo'] .juego {
+  animation: pt-juego 0.9s ease-out both;
+}
+@keyframes pt-juego {
+  from {
+    scale: 1.08;
+  }
+  to {
+    scale: 1;
+  }
+}
+.app[data-llegada='abriendo'] :is(.barra, .franja-red) {
+  animation: pt-hud-arriba 0.32s ease-out 0.7s both;
+}
+.app[data-llegada='abriendo'] .villas {
+  animation: pt-hud-abajo 0.32s ease-out 0.78s both;
+}
+.app[data-llegada='abriendo'] .ayuda-controles,
+.app[data-llegada='pista'] .ayuda-controles {
+  visibility: hidden;
+}
+@keyframes pt-hud-arriba {
+  from {
+    opacity: 0;
+    translate: 0 -22px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes pt-hud-abajo {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* ---------- Pista de controles ---------- */
+.pt-pista {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  translate: -50% 0;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--tinta);
+  color: #fff;
+  font: 600 15px/1.35 var(--fuente);
+  text-align: center;
+  animation: pt-pista 2.9s ease-out both;
+}
+@keyframes pt-pista {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Ventana de información ---------- */
+.pt-info {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  padding: 24px;
+  border: 2.5px solid var(--tinta);
+  border-radius: var(--radio-panel);
+  background: var(--papel);
+  color: var(--tinta);
+}
+.pt-info::backdrop {
+  background: rgba(59, 42, 37, 0.45);
+}
+.pt-info h2 {
+  margin: 0 0 12px;
+  font: 400 30px/1.1 var(--fuente-titulo);
+}
+.pt-info p,
+.pt-info li {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.pt-info ol,
+.pt-info ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.pt-info li + li {
+  margin-top: 8px;
+}
+.pt-info .pt-boton {
+  height: 44px;
+  margin-top: 16px;
+  --pt-texto: 1;
+}
+
+/* ---------- Celular y pantallas bajas: no están en Figma, son una adaptación ---------- */
+@media (max-width: 759px) {
+  .pt-nav {
+    left: 16px;
+    right: 16px;
+    top: 44px;
+  }
+  .pt-marca {
+    font-size: 22px;
+  }
+  .pt-enlaces .pt-enlace {
+    display: none;
+  }
+  .pt-enlaces {
+    padding: 0;
+    background: none;
+  }
+  .pt-boton-nav {
+    height: 44px;
+    padding: 0 18px;
+  }
+  .pt-textos {
+    left: 16px;
+    right: 16px;
+    top: 104px;
+    width: auto;
+  }
+  .pt-titulo {
+    font-size: clamp(32px, 9.6vw, 56px);
+  }
+  .pt-parrafo {
+    width: auto;
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .pt-acciones {
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .pt-acciones .pt-boton {
+    flex: 1 1 calc(50% - 5px);
+    height: 48px;
+    padding: 0 8px;
+  }
+  .pt-solo-movil {
+    display: inline-block;
+  }
+}
+/* Celular acostado: no hay alto para separar los textos del pueblo, así que van sobre un fondo propio. */
+@media (max-height: 520px) {
+  .pt-nav {
+    left: 16px;
+    right: 16px;
+    top: 38px;
+  }
+  .pt-marca {
+    font-size: 20px;
+  }
+  .pt-boton-nav {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 16px;
+  }
+  .pt-textos {
+    left: 16px;
+    right: auto;
+    top: 92px;
+    width: auto;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 253, 248, 0.94);
+  }
+  .pt-titulo {
+    font-size: 28px;
+  }
+  .pt-parrafo {
+    display: none;
+  }
+  .pt-acciones {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .pt-acciones .pt-boton {
+    flex: none;
+    height: 44px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+  .pt-solo-movil {
+    display: none;
+  }
+}

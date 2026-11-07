@@ -155,6 +155,8 @@ export class Villa extends Phaser.Scene {
   private cadaPosicion = 125;
   private joystick = new Phaser.Math.Vector2(0, 0);
   private controlesActivos = true;
+  /** Piezas grandes que todavía se están dibujando (la portada espera a que terminen). */
+  private piezasPendientes: Promise<void>[] = [];
   private desuscribir: (() => void)[] = [];
   private datos: DatosVilla = {};
 
@@ -215,6 +217,7 @@ export class Villa extends Phaser.Scene {
     this.obstaculos = this.physics.add.staticGroup();
     this.cambiarFilas(plano.MIN_FILAS);
 
+    this.piezasPendientes = [];
     this.crearPlaza();
 
     const destino = this.datos.destino ? plano.puertaDeLote(loteEnSector(this.datos.destino)) : null;
@@ -226,11 +229,14 @@ export class Villa extends Phaser.Scene {
     // Mientras se dibuja la persona, el jugador usa una textura vacía.
     this.jugador = new Jugador(this, inicio.x, inicio.y, '__DEFAULT', this.resolucion);
     this.jugador.setVisible(false);
-    void this.texturaPersona(this.claveJugador, this.aparienciaJugador()).then((ok) => {
+    const jugadorListo = this.texturaPersona(this.claveJugador, this.aparienciaJugador()).then((ok) => {
       if (ok && this.jugador?.active) {
         this.jugador.cambiarTextura(this.claveJugador, this.resolucion);
         this.jugador.setVisible(true);
       }
+    });
+    void Promise.allSettled([jugadorListo, ...this.piezasPendientes]).then(() => {
+      if (this.sys.isActive()) emitir('villa-lista');
     });
     this.physics.add.collider(this.jugador, this.obstaculos);
 
@@ -304,6 +310,7 @@ export class Villa extends Phaser.Scene {
         this.controlesActivos = activos;
         if (!activos) this.jugador.mover(0, 0);
       }),
+      escuchar('llegada', () => this.jugador?.active && this.jugador.aterrizar()),
       escuchar('pedir-entrar', () => this.entrar()),
       escuchar('ir-a-lote', (lote) => this.irALote(lote)),
       escuchar('ir-a-local', (destino) => {
@@ -658,11 +665,12 @@ export class Villa extends Phaser.Scene {
   private pieza(clave: string, svg: (t: { ancho: number; alto: number }) => string, ancho: number, alto: number, x: number, y: number, profundidad: number, alListo?: (img: Phaser.GameObjects.Image) => void): void {
     const conResolucion = `${clave}@${this.resolucion}`;
     marcarPermanente(conResolucion);
-    void asegurarTextura(this, conResolucion, svg, ancho, alto, this.resolucion).then((ok) => {
+    const lista = asegurarTextura(this, conResolucion, svg, ancho, alto, this.resolucion).then((ok) => {
       if (!ok || !this.sys.isActive() && !this.sys.isSleeping()) return;
       const img = this.add.image(x, y, conResolucion).setOrigin(0).setScale(1 / this.resolucion).setDepth(profundidad);
       alListo?.(img);
     });
+    this.piezasPendientes.push(lista);
   }
 
   private solido(x: number, y: number, ancho: number, alto: number): Phaser.GameObjects.Zone {

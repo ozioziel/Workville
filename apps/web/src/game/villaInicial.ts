@@ -1,11 +1,14 @@
 import { esLugar, type Lugar } from '@cryptoville/shared';
+import { modoDeRuta } from '../lib/rutas';
 import type { ModoVilla } from './EventBus';
 
 const CLAVE = 'cryptoville-villa';
 const CLAVE_MODO = 'cryptoville-modo';
 
-/** Modo con el que se empieza: el último usado o «Quiero contratar». */
+/** Modo con el que se empieza: el de la dirección (`/trabajar`), el último usado o «Quiero contratar». */
 export function modoGuardado(): ModoVilla {
+  const deLaRuta = modoDeRuta(location.pathname);
+  if (deLaRuta) return deLaRuta;
   try {
     return localStorage.getItem(CLAVE_MODO) === 'trabajar' ? 'trabajar' : 'contratar';
   } catch {

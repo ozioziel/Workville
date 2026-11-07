@@ -114,6 +114,12 @@ export interface CuadroInterior {
 export interface EventosJuego {
   /** Phaser → React: la escena de una villa está lista (React vuelve a mandar locales y personaje). */
   'pueblo-listo': [];
+  /** Phaser → React: la villa ya tiene dibujados su edificio central, su estatua y el jugador (las nubes se pueden abrir). */
+  'villa-lista': [];
+  /** React → Phaser: pausar el juego mientras la portada lo tapa, o reanudarlo. */
+  'juego-dormir': [dormir: boolean];
+  /** React → Phaser: se abrieron las nubes de la portada, el jugador cae en la villa. */
+  llegada: [];
   /** Phaser → React: villa (o la Plaza) que se está mostrando (al llegar). */
   'villa-actual': [lugar: Lugar];
   /** Phaser → React: sector de la villa que se está mostrando y cuántos hay. */
