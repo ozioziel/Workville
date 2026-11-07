@@ -422,7 +422,7 @@ function Pueblo() {
       data-llegada={fasePortada === 'abriendo' || fasePortada === 'pista' ? fasePortada : undefined}
     >
       <PhaserGame />
-      {portadaActiva && <Portada fase={fasePortada} lugar={lugar} red={obtenerConfig().red} tactil={tactil} onElegir={elegirPortada} />}
+      {portadaActiva && <Portada fase={fasePortada} lugar={lugar} red={obtenerConfig().red} tactil={tactil} onElegir={elegirPortada} onLegal={(documento) => abrir({ tipo: 'legal', documento })} />}
       {enTestnet && (
         <div className="franja-red" role="status">
           Modo de prueba: el dinero no es real
@@ -606,7 +606,7 @@ function Pueblo() {
           amplio={['pedido', 'perfil', 'mi-local', 'mis-locales', 'personaje', 'portafolio', 'proyecto', 'mi-portafolio', 'mis-trabajos', 'edificio', 'arbitro', 'busqueda', 'legal', 'comentarios-equipo'].includes(panel.tipo)}
           // El buscador es el tablón de afiches: siempre a pantalla completa.
           completo={(enPedidos && pedidosCompleto) || panel.tipo === 'buscar'}
-          clase={panel.tipo === 'buscar' ? 'panel-tablon' : undefined}
+          clase={panel.tipo === 'buscar' ? 'panel-tablon' : panel.tipo === 'legal' ? 'panel-sobre-portada' : undefined}
           onAlternarCompleto={enPedidos ? alternarPedidosCompleto : undefined}
           lateral={usuario && enPedidos ? <Escribiendo avatar={usuario.avatar} apariencia={usuario.apariencia ?? null} /> : undefined}
           onCerrar={panel.tipo === 'bienvenida' ? cerrarBienvenida : cerrar}
