@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { modoDeRuta, rutaDeModo, rutaNormalizada } from './rutas';
+import { modoDeRuta, paginaDeRuta, rutaDeModo, rutaDePagina, rutaNormalizada, type PaginaSitio } from './rutas';
 
 describe('rutas de la web', () => {
   it('cada modo tiene su ruta y se puede volver de la ruta al modo', () => {
@@ -22,5 +22,18 @@ describe('rutas de la web', () => {
     expect(rutaNormalizada('/contratar')).toBe('/contratar');
     expect(rutaNormalizada('/hola')).toBe('/');
     expect(rutaNormalizada('/')).toBe('/');
+  });
+
+  it('cada página informativa tiene su ruta, que no es de ningún modo', () => {
+    const paginas: PaginaSitio[] = ['quees', 'como', 'villas', 'comisiones'];
+    for (const pagina of paginas) {
+      const ruta = rutaDePagina(pagina);
+      expect(paginaDeRuta(ruta)).toBe(pagina);
+      expect(paginaDeRuta(`${ruta}/`)).toBe(pagina);
+      expect(modoDeRuta(ruta)).toBeNull();
+      expect(rutaNormalizada(`${ruta}/`)).toBe(ruta);
+    }
+    expect(paginaDeRuta('/')).toBeNull();
+    expect(paginaDeRuta('/contratar')).toBeNull();
   });
 });
