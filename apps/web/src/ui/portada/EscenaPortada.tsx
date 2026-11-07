@@ -27,6 +27,8 @@ import {
 import { crearCasa } from '../../arte/casa';
 import { crearPersona } from '../../arte/persona';
 import { crearArbol, edificioCentral } from '../../arte/villa';
+import { useIdioma } from '../../lib/idioma';
+import { traducir, type ClaveTexto } from '../sitio/textos';
 
 // Posiciones, tamaños y orden de capas: los del marco «1 / Amanece en la villa» de Figma (lienzo de 1440 × 900).
 
@@ -113,10 +115,10 @@ const CASAS: { barrio: Barrio; x: number; nombre: string; color: string }[] = [
   { barrio: 'tech', x: 350, nombre: 'Apps Rocío', color: '#fdf6e3' },
 ];
 
-const EDIFICIOS: { barrio: Barrio; x: number; y: number; escala: number; retraso: string; frente: [number, number]; texto: string; textoX: number; textoY: number; color: string }[] = [
-  { barrio: 'academy', x: 650, y: 456.64, escala: 0.72, retraso: '0.2s', frente: [78, 338], texto: 'BIBLIOTECA', textoX: 134, textoY: 185, color: '#e9b44c' },
-  { barrio: 'audiovisual', x: 850, y: 472.8, escala: 0.8, retraso: '0.38s', frente: [76, 274], texto: 'CINE WORKVILLE', textoX: 132, textoY: 121, color: '#7e3f43' },
-  { barrio: 'tech', x: 1075, y: 428, escala: 0.8, retraso: '0.56s', frente: [58, 330], texto: 'TORRE DE DATOS', textoX: 114, textoY: 177, color: '#c2e0c6' },
+const EDIFICIOS: { barrio: Barrio; x: number; y: number; escala: number; retraso: string; frente: [number, number]; texto: ClaveTexto; textoX: number; textoY: number; color: string }[] = [
+  { barrio: 'academy', x: 650, y: 456.64, escala: 0.72, retraso: '0.2s', frente: [78, 338], texto: 'letrero.biblioteca', textoX: 134, textoY: 185, color: '#e9b44c' },
+  { barrio: 'audiovisual', x: 850, y: 472.8, escala: 0.8, retraso: '0.38s', frente: [76, 274], texto: 'letrero.cine', textoX: 132, textoY: 121, color: '#7e3f43' },
+  { barrio: 'tech', x: 1075, y: 428, escala: 0.8, retraso: '0.56s', frente: [58, 330], texto: 'letrero.torre', textoX: 114, textoY: 177, color: '#c2e0c6' },
 ];
 
 const CAMINANTES: { avatar: number; x: number; y: number; direccion: 'derecha' | 'izquierda'; retraso: string }[] = [
@@ -130,13 +132,14 @@ const PASOS = [0, 2, 4, 6] as const;
 
 function Edificio({ barrio, x, y, escala, retraso, frente, texto, textoX, textoY, color }: (typeof EDIFICIOS)[number]) {
   const e = edificioCentral(barrio);
+  const idioma = useIdioma();
   return (
     <div className="pt-pieza pt-edificio" style={{ left: x, top: y, '--retraso': retraso } as CSSProperties}>
       <div style={{ scale: `${escala}`, transformOrigin: '0 0', position: 'relative' }}>
         <img src={aImagen(e.frente.svg())} alt="" width={e.frente.ancho} height={e.frente.alto} style={{ position: 'absolute', left: frente[0], top: frente[1] }} draggable={false} />
         <img src={aImagen(e.cuerpo.svg())} alt="" width={e.cuerpo.ancho} height={e.cuerpo.alto} style={{ position: 'absolute', left: 0, top: 0 }} draggable={false} />
         <span className="pt-letrero pt-letrero-edificio" style={{ left: textoX, top: textoY, color }}>
-          {texto}
+          {traducir(idioma, texto)}
         </span>
       </div>
     </div>

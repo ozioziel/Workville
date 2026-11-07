@@ -1,7 +1,12 @@
-import { BARRIOS, LISTA_BARRIOS, colorLugar, reglasDe, tituloLugar, type Lugar, type RedStellar } from '@cryptoville/shared';
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { colorLugar, tituloLugar, type DocumentoLegal, type Lugar, type RedStellar } from '@cryptoville/shared';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { aImagen, crearCabina, crearNube, medidasNube, type TipoNube } from '../../arte/portada';
+import { useIdioma, type Idioma } from '../../lib/idioma';
+import { paginaDeRuta, rutaDePagina, type PaginaSitio } from '../../lib/rutas';
 import { LogoIcono } from '../components/Iconos';
+import { SelectorIdioma } from '../sitio/SelectorIdioma';
+import { Sitio } from '../sitio/Sitio';
+import { traducir, type ClaveTexto } from '../sitio/textos';
 import { EscenaPortada } from './EscenaPortada';
 import { medirPortada, type AccionPortada, type FasePortada } from './fases';
 import './portada.css';
@@ -20,7 +25,7 @@ const NUBES_CORTINA: { tipo: TipoNube; escala: number; x: number; y: number; lad
   { tipo: 'a', escala: 3.6, x: 610, y: 735, lado: 1 },
 ];
 
-function Cortina({ lugar }: { lugar: Lugar }) {
+function Cortina({ lugar, idioma }: { lugar: Lugar; idioma: Idioma }) {
   return (
     <div className="pt-cortina" role="status">
       <div className="pt-velo" />
@@ -43,70 +48,18 @@ function Cortina({ lugar }: { lugar: Lugar }) {
       <div className="pt-llegando">
         <div className="pt-cable-llegada" />
         <img className="pt-cabina-llegada" src={aImagen(crearCabina(colorLugar(lugar).color))} alt="" />
-        <p className="pt-texto-llegando">Llegando a {tituloLugar(lugar)}</p>
+        <p className="pt-texto-llegando">{traducir(idioma, 'portada.llegando', { lugar: tituloLugar(lugar) })}</p>
       </div>
     </div>
   );
 }
 
-type TemaInfo = 'como' | 'villas' | 'comisiones';
-
-/** Mientras la portada no tenga secciones debajo, los enlaces del menú abren esta ventana. */
-function InfoPortada({ tema, red, onCerrar }: { tema: TemaInfo; red: RedStellar; onCerrar: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    ref.current?.showModal();
-  }, []);
-  const c = reglasDe(red).comisiones;
-  const porcentaje = (bps: number) => `${bps / 100} %`;
-  return (
-    <dialog ref={ref} className="pt-info" onClose={onCerrar}>
-      {tema === 'como' && (
-        <>
-          <h2>Cómo funciona</h2>
-          <ol>
-            <li>Camina por las villas y entra a los locales de las personas que ofrecen servicios.</li>
-            <li>Pide un servicio. Cuando el proveedor acepta, eliges cómo pagar: directo, con garantía o por etapas.</li>
-            <li>Con garantía, el contrato guarda el dinero hasta que confirmas la entrega. Si hay un problema, decide el árbitro.</li>
-          </ol>
-        </>
-      )}
-      {tema === 'villas' && (
-        <>
-          <h2>Villas</h2>
-          <ul>
-            {LISTA_BARRIOS.map((b) => (
-              <li key={b}>
-                <strong>{BARRIOS[b].nombre}:</strong> {BARRIOS[b].descripcion}.
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {tema === 'comisiones' && (
-        <>
-          <h2>Comisiones</h2>
-          <ul>
-            <li>
-              <strong>Pago directo:</strong> {porcentaje(c.directoBps)}.
-            </li>
-            <li>
-              <strong>Con garantía:</strong> {porcentaje(c.garantiaBps)}.
-            </li>
-            <li>
-              <strong>Por etapas:</strong> {porcentaje(c.etapasBps)} en cada etapa.
-            </li>
-          </ul>
-        </>
-      )}
-      <form method="dialog">
-        <button type="submit" className="pt-boton">
-          Cerrar
-        </button>
-      </form>
-    </dialog>
-  );
-}
+const ENLACES: { pagina: PaginaSitio; clave: ClaveTexto }[] = [
+  { pagina: 'quees', clave: 'nav.quees' },
+  { pagina: 'como', clave: 'nav.como' },
+  { pagina: 'villas', clave: 'nav.villas' },
+  { pagina: 'comisiones', clave: 'nav.comisiones' },
+];
 
 interface PropsPortada {
   fase: FasePortada;
@@ -114,11 +67,33 @@ interface PropsPortada {
   red: RedStellar;
   tactil: boolean;
   onElegir: (accion: AccionPortada) => void;
+  onLegal: (documento: DocumentoLegal) => void;
 }
 
-export function Portada({ fase, lugar, red, tactil, onElegir }: PropsPortada) {
+export function Portada({ fase, lugar, red, tactil, onElegir, onLegal }: PropsPortada) {
   const raiz = useRef<HTMLDivElement>(null);
-  const [info, setInfo] = useState<TemaInfo | null>(null);
+  const idioma = useIdioma();
+  const t = (clave: ClaveTexto) => traducir(idioma, clave);
+  // Las páginas informativas viven aquí para poder salir a la villa con la misma transición por las nubes.
+  const [pagina, setPagina] = useState<PaginaSitio | null>(() => paginaDeRuta(location.pathname));
+
+  useEffect(() => {
+    const alCambiarHistorial = () => setPagina(paginaDeRuta(location.pathname));
+    window.addEventListener('popstate', alCambiarHistorial);
+    return () => window.removeEventListener('popstate', alCambiarHistorial);
+  }, []);
+
+  const irA = useCallback((ruta: string) => {
+    if (ruta !== location.pathname) history.pushState(null, '', ruta);
+    setPagina(paginaDeRuta(ruta));
+  }, []);
+
+  const alPulsarEnlace = (e: MouseEvent<HTMLAnchorElement>, ruta: string) => {
+    // Con Ctrl, Cmd o el botón del medio, el navegador abre otra pestaña.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    irA(ruta);
+  };
 
   useLayoutEffect(() => {
     const div = raiz.current;
@@ -141,67 +116,67 @@ export function Portada({ fase, lugar, red, tactil, onElegir }: PropsPortada) {
 
   return (
     <div ref={raiz} className="portada" data-fase={fase}>
-      {conEscena && (
+      {conEscena && pagina && <Sitio pagina={pagina} irA={irA} onElegir={onElegir} onLegal={onLegal} />}
+      {conEscena && !pagina && (
         <>
           <EscenaPortada />
           {red === 'testnet' && (
             <div className="pt-franja" role="status">
-              Modo de prueba: el dinero no es real
+              {t('franja')}
             </div>
           )}
           <header className="pt-nav">
             <div className="pt-marca">
               <LogoIcono tamano={44} />
-              WorkVille
+              <span>WorkVille</span>
             </div>
-            <nav className="pt-enlaces" aria-label="Información">
-              <button type="button" className="pt-enlace" onClick={() => setInfo('como')}>
-                Cómo funciona
-              </button>
-              <button type="button" className="pt-enlace" onClick={() => setInfo('villas')}>
-                Villas
-              </button>
-              <button type="button" className="pt-enlace" onClick={() => setInfo('comisiones')}>
-                Comisiones
-              </button>
+            <nav className="pt-enlaces" aria-label={t('nav.aria')}>
+              {ENLACES.map((e) => (
+                <a key={e.pagina} className="pt-enlace" href={rutaDePagina(e.pagina)} onClick={(ev) => alPulsarEnlace(ev, rutaDePagina(e.pagina))}>
+                  {t(e.clave)}
+                </a>
+              ))}
+              <SelectorIdioma />
               <button type="button" className="pt-boton pt-boton-nav" onClick={() => onElegir('entrar')}>
-                Entrar
+                {t('nav.entrar')}
               </button>
             </nav>
           </header>
           <main className="pt-textos">
             <h1 className="pt-titulo">
-              Cada freelancer
-              <br />
-              tiene su local.
-              <br />
-              Entra y contrata.
+              {t('portada.titulo')
+                .split('\n')
+                .map((linea, i) => (
+                  <span key={linea} className="pt-titulo-linea">
+                    {i > 0 && <br />}
+                    {linea}
+                  </span>
+                ))}
             </h1>
-            <p className="pt-parrafo">WorkVille es un pueblo 2D de freelancers. Si pagas con garantía, el dinero espera en un contrato hasta que confirmas la entrega.</p>
+            <p className="pt-parrafo">{t('portada.parrafo')}</p>
             <div className="pt-acciones">
               <button type="button" className="pt-boton pt-boton-principal" onClick={() => onElegir('contratar')}>
-                Quiero contratar
+                {t('accion.contratar')}
               </button>
               <button type="button" className="pt-boton" onClick={() => onElegir('trabajar')}>
-                Quiero trabajar
+                {t('accion.trabajar')}
               </button>
               <button type="button" className="pt-mirar" onClick={() => onElegir('mirar')}>
-                Solo mirar
+                {t('portada.mirar')}
               </button>
-              <button type="button" className="pt-mirar pt-solo-movil" onClick={() => setInfo('como')}>
-                Cómo funciona
-              </button>
+              <a className="pt-mirar pt-solo-movil" href={rutaDePagina('como')} onClick={(ev) => alPulsarEnlace(ev, rutaDePagina('como'))}>
+                {t('nav.como')}
+              </a>
             </div>
           </main>
         </>
       )}
-      {conCortina && <Cortina lugar={lugar} />}
+      {conCortina && <Cortina lugar={lugar} idioma={idioma} />}
       {fase === 'pista' && (
         <p className="pt-pista" role="status">
-          {tactil ? 'Camina con el joystick. Entra a un local con el botón «Entrar».' : 'Camina con las flechas o WASD. Entra a un local con E.'}
+          {t(tactil ? 'portada.pista.tactil' : 'portada.pista.teclado')}
         </p>
       )}
-      {info && <InfoPortada tema={info} red={red} onCerrar={() => setInfo(null)} />}
     </div>
   );
 }

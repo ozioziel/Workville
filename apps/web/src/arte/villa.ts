@@ -6,7 +6,7 @@
 // Las piezas grandes se dibujan en las coordenadas de la muestra (el cine ocupa x 330–590, y 58–332):
 // la escena de Phaser solo las traslada al centro de la villa.
 import { colorLugar, type Lugar } from '@cryptoville/shared';
-import { TINTA, envolver } from './svg';
+import { TINTA, envolver, escaparTexto } from './svg';
 
 const CREMA = '#fdf6e3';
 const DORADO = '#e9b44c';
@@ -488,7 +488,7 @@ export const PUERTA_TABLON = { x: TABLON.x + TABLON.ancho / 2, y: TABLON.y + TAB
  * Un tablero de madera con techito del color del lugar, el corcho lleno de afiches clavados y un
  * cartel arriba: «TABLÓN DE AFICHES». Las texturas no cargan fuentes web: el texto usa una del sistema.
  */
-export function crearTablon(lugar: Lugar, tamano?: { ancho: number; alto: number }): string {
+export function crearTablon(lugar: Lugar, tamano?: { ancho: number; alto: number }, titulo = 'TABLÓN DE AFICHES'): string {
   const c = colorLugar(lugar);
   const madera = '#9a7653';
   const fuente = `font-family="Arial, Helvetica, sans-serif"`;
@@ -534,7 +534,7 @@ export function crearTablon(lugar: Lugar, tamano?: { ancho: number; alto: number
     papeles +
     // Cartel de arriba.
     `<rect x="26" y="9" width="88" height="13" rx="3" fill="${CREMA}" stroke="${TINTA}" stroke-width="1.6"/>` +
-    `<text x="70" y="18.6" text-anchor="middle" ${fuente} font-weight="700" font-size="7.6" letter-spacing=".6" fill="${TINTA}">TABLÓN DE AFICHES</text>`;
+    `<text x="70" y="18.6" text-anchor="middle" ${fuente} font-weight="700" font-size="7.6" letter-spacing=".6" fill="${TINTA}">${escaparTexto(titulo)}</text>`;
   return envolver(`0 0 ${TABLON.ancho} ${TABLON.alto}`, cuerpo, tamano);
 }
 

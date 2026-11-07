@@ -77,6 +77,10 @@ describe('cuándo se muestra la portada', () => {
     expect(debeMostrarPortada('/', '?utm_source=correo')).toBe(true);
   });
 
+  it('también en las páginas informativas, que viven dentro de la portada', () => {
+    for (const ruta of ['/que-es', '/como-funciona', '/villas', '/comisiones']) expect(debeMostrarPortada(ruta, '')).toBe(true);
+  });
+
   it('nunca en las rutas de las villas', () => {
     expect(debeMostrarPortada('/contratar', '')).toBe(false);
     expect(debeMostrarPortada('/trabajar', '')).toBe(false);

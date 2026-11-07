@@ -8,6 +8,18 @@ const RUTA_DE_MODO: Record<ModoVilla, string> = {
 
 export const rutaDeModo = (modo: ModoVilla): string => RUTA_DE_MODO[modo];
 
+/** Las páginas informativas del sitio. */
+export type PaginaSitio = 'quees' | 'como' | 'villas' | 'comisiones';
+
+const RUTA_DE_PAGINA: Record<PaginaSitio, string> = {
+  quees: '/que-es',
+  como: '/como-funciona',
+  villas: '/villas',
+  comisiones: '/comisiones',
+};
+
+export const rutaDePagina = (pagina: PaginaSitio): string => RUTA_DE_PAGINA[pagina];
+
 const sinBarraFinal = (ruta: string): string => ruta.replace(/\/+$/, '') || '/';
 
 /** El modo que indica la ruta, o `null` si la ruta no es de ninguna villa. */
@@ -18,10 +30,19 @@ export function modoDeRuta(ruta: string): ModoVilla | null {
   return null;
 }
 
+/** La página informativa que indica la ruta, o `null` si la ruta no es de ninguna. */
+export function paginaDeRuta(ruta: string): PaginaSitio | null {
+  const limpia = sinBarraFinal(ruta);
+  const pagina = (Object.keys(RUTA_DE_PAGINA) as PaginaSitio[]).find((p) => RUTA_DE_PAGINA[p] === limpia);
+  return pagina ?? null;
+}
+
 /** La forma correcta de una ruta: `/trabajar/` pasa a `/trabajar` y lo desconocido, a la portada. */
 export function rutaNormalizada(ruta: string): string {
   const modo = modoDeRuta(ruta);
-  return modo ? RUTA_DE_MODO[modo] : '/';
+  if (modo) return RUTA_DE_MODO[modo];
+  const pagina = paginaDeRuta(ruta);
+  return pagina ? RUTA_DE_PAGINA[pagina] : '/';
 }
 
 /** Corrige la dirección al arrancar, sin dejar una entrada de más en el historial. */
