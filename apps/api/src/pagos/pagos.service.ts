@@ -381,7 +381,8 @@ export class PagosService {
   // Contrato v2: armar las llamadas (TransaccionesService las firma en la app)
   // ---------------------------------------------------------------
 
-  private exigirTope(montoUsdc: string): void {
+  /** Tope por pedido de reglas.ts (el mismo que exige el contrato v2 con `tope_pedido`). */
+  exigirTope(montoUsdc: string): void {
     const tope = Number(this.reglas.topePedidoUsdc);
     if (tope > 0 && Number(montoUsdc) > tope) throw new BadRequestException(`El monto pasa del tope por pedido (${tope} USDC)`);
   }
@@ -500,6 +501,7 @@ export class PagosService {
       walletsProveedor: pedido.direccion_proveedor ? [pedido.direccion_proveedor] : await walletsDe(pedido.proveedor),
       plan: d.funcion === 'crear_pedido' ? await this.planEnContrato(pedido.id) : undefined,
       monto: d.funcion === 'pagar_directo' ? BigInt(usdcAUnidades(formatoUsdc(String(pedido.monto_usdc)))) : undefined,
+      fase: d.fase,
     });
     if (error) throw new BadRequestException(`La transacción no corresponde a este paso: ${error}`);
 
@@ -628,6 +630,11 @@ export class PagosService {
    * (Firmar en la app es lo recomendado; esto queda como opción avanzada.)
    */
   async declararV2(yo: Usuario, pedidoId: string, d: DatosPasoV2 & { hash: string }) {
+    // Solo las partes y el árbitro: el hash es público en la red, y quien lo declara deja su motivo o su decisión.
+    const { pedido, rol } = await this.orders.cargarVisible(pedidoId, yo);
+    if (pedido.es_ejemplo) throw new BadRequestException('Este es un pedido de ejemplo: no tiene transacciones reales');
+    if (d.funcion === 'resolver' && rol !== 'arbitro') throw new ForbiddenException('Solo el árbitro registra la resolución de una disputa');
+    if (d.funcion === 'abrir_disputa' && rol === 'arbitro') throw new ForbiddenException('La disputa la abre el cliente o el proveedor');
     const respuesta = await this.stellar.esperar(d.hash.toLowerCase());
     if (respuesta.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
       throw new BadRequestException(

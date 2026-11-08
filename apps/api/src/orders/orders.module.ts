@@ -141,11 +141,13 @@ export class OrdersController {
   @Post(':id/aceptar')
   @HttpCode(200)
   async aceptar(@UsuarioActual() yo: Usuario, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AceptarDto) {
-    const actual = await this.prisma.pedido.findUnique({ where: { id }, select: { metodo_pago: true } });
+    const actual = await this.prisma.pedido.findUnique({ where: { id }, select: { metodo_pago: true, contrato: true, monto_usdc: true } });
     if (actual?.metodo_pago === 'etapas') {
       if (!dto.fases?.length) throw new BadRequestException('Por etapas: manda el plan de fases');
       return serializar(await this.pagos.proponerPlan(yo, id, dto.fases, dto.monto_usdc));
     }
+    // El contrato v2 rechaza un pago por encima del tope: se avisa al aceptar, no cuando el cliente ya quiere pagar.
+    if (actual?.contrato === 'v2') this.pagos.exigirTope(dto.monto_usdc ?? String(actual.monto_usdc));
     const pedido = await this.orders.aceptar(yo, id, dto.fecha_limite, dto.monto_usdc);
     if (pedido.contrato === 'v2' && pedido.metodo_pago === 'garantia') await this.pagos.crearFaseUnica(pedido.id);
     return serializar(await this.prisma.pedido.findUniqueOrThrow({ where: { id } }));

@@ -169,6 +169,16 @@ describe('pasos del pedido', () => {
     const args = argumentosPara(pedido('aceptado'), 'crear_pedido', G_CLIENTE, null);
     expect(args.map((a) => a.valor).slice(0, 4)).toEqual([G_CLIENTE, G_PROV, '1791054364005', '100000000']);
   });
+
+  it('el Lab usa las wallets fijadas en el pedido (la de cobro del proveedor y la que pagó el cliente)', () => {
+    const cobro = Keypair.random().publicKey();
+    const pago = Keypair.random().publicKey();
+    const aceptado = pedido('aceptado', { direccion_proveedor: cobro });
+    expect(argumentosPara(aceptado, 'crear_pedido', G_CLIENTE, null)[1].valor).toBe(cobro);
+    const pagado = pedido('pagado', { direccion_proveedor: cobro, direccion_cliente: pago });
+    expect(argumentosPara(pagado, 'marcar_entregado', cobro, null)[0].valor).toBe(cobro);
+    expect(argumentosPara(pagado, 'liberar', pago, null)[0].valor).toBe(pago);
+  });
 });
 
 describe('Se busca: filtro de carteles', () => {
