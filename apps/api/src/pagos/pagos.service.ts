@@ -381,7 +381,8 @@ export class PagosService {
   // Contrato v2: armar las llamadas (TransaccionesService las firma en la app)
   // ---------------------------------------------------------------
 
-  private exigirTope(montoUsdc: string): void {
+  /** Tope por pedido de reglas.ts (el mismo que exige el contrato v2 con `tope_pedido`). */
+  exigirTope(montoUsdc: string): void {
     const tope = Number(this.reglas.topePedidoUsdc);
     if (tope > 0 && Number(montoUsdc) > tope) throw new BadRequestException(`El monto pasa del tope por pedido (${tope} USDC)`);
   }
