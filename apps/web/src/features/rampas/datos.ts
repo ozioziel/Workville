@@ -1,6 +1,6 @@
 // Rampas: pagar con el QR del banco (bolivianos → USDC) y pasar a mi banco (USDC → cuenta del banco).
 // En testnet la rampa puede ser SIMULADA (la API manda USDC de testnet desde una wallet caja): ver docs/simulaciones.md.
-import type { EstadoRampa, SentidoRampa } from '@cryptoville/shared';
+import { DECIMALES_TOKEN, usdcAUnidades, type EstadoRampa, type SentidoRampa } from '@cryptoville/shared';
 import { api } from '../../lib/api';
 
 export interface Rampa {
@@ -91,9 +91,20 @@ export function crearRetiro(datos: { monto_usdc: string; direccion: string; banc
 
 /** Lo que falta para pagar `monto` con `saldo` (redondeado hacia arriba a centavos; mínimo 1 USDC). */
 export function faltaParaPagar(monto: string, saldo: string | null): string {
-  const falta = Number(monto) - Number(saldo ?? 0);
-  const centavos = Math.ceil(Math.max(falta, 1) * 100) / 100;
-  return centavos.toFixed(2);
+  // Se cuenta en unidades del token (enteros): con decimales de JS, 1.1 × 100 da 110.00000000000001 y el
+  // redondeo hacia arriba pediría un centavo de más (1,11 en vez de 1,10).
+  const UNIDADES_POR_CENTAVO = 10n ** BigInt(DECIMALES_TOKEN - 2);
+  const MINIMO = 100n; // 1 USDC, en centavos
+  try {
+    const falta = BigInt(usdcAUnidades(String(monto))) - BigInt(usdcAUnidades(String(saldo ?? '0')));
+    const centavos = falta <= 0n ? 0n : (falta + UNIDADES_POR_CENTAVO - 1n) / UNIDADES_POR_CENTAVO;
+    const total = centavos > MINIMO ? centavos : MINIMO;
+    return `${total / 100n}.${String(total % 100n).padStart(2, '0')}`;
+  } catch {
+    // Un monto con otro formato (por ejemplo, en notación científica): el cálculo de siempre.
+    const falta = Number(monto) - Number(saldo ?? 0);
+    return (Math.ceil(Math.max(falta, 1) * 100) / 100).toFixed(2);
+  }
 }
 
 // El saldo de arriba se vuelve a leer cuando algo lo cambia (pago, recarga, retiro…).
