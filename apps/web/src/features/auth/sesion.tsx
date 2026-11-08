@@ -183,8 +183,9 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       return;
     }
     c.onAuthStateChange((estado) => setPasoCorreo(pasoDe(estado)));
-    c.beginEmailLogin();
-    c.sendEmailCode(correo.trim());
+    // `login` crea la sesión de Pollar y recién entonces manda el código: `sendEmailCode` justo después de
+    // `beginEmailLogin` fallaba siempre, porque la sesión todavía no existía.
+    c.login({ provider: 'email', email: correo.trim() });
   }, []);
 
   const confirmarCodigo = useCallback(
