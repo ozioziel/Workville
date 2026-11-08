@@ -65,8 +65,10 @@ export function argumentosPara(
 ): ArgumentoContrato[] {
   return argumentosContrato(accion, {
     numero: p.numero,
-    cliente: p.cliente.direccion,
-    proveedor: p.proveedor.direccion,
+    // Las wallets del pedido en el contrato (como direccionesDe en la API): el proveedor cobra en su wallet
+    // «para cobrar», que puede no ser la de su cuenta, y el cliente pudo pagar con otra de sus wallets.
+    cliente: p.direccion_cliente ?? p.cliente.direccion,
+    proveedor: p.direccion_proveedor ?? p.proveedor.direccion,
     montoUsdc: p.monto_usdc,
     fechaLimite: p.fecha_limite,
     quien,
