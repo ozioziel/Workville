@@ -38,9 +38,9 @@ describe('verificación de transacciones del contrato v2', () => {
     const otroPedido = argumentosCrearV2(cliente, proveedor, 5n, plan);
     expect(verificarInvocacionV2(invocacion('crear_pedido', otroPedido), 'crear_pedido', contexto)).toMatch(/número/);
     const liberar = invocacion('liberar_fase', [arg.direccion(cliente), arg.u64('1790000000123'), arg.u32(0)]);
-    expect(verificarInvocacionV2(liberar, 'entregar_fase', contexto)).toMatch(/llama a/);
-    expect(verificarInvocacionV2(liberar, 'liberar_fase', contexto)).toBeNull();
-    expect(verificarInvocacionV2(liberar, 'liberar_fase', { ...contexto, contrato: 'COTRO' })).toMatch(/otro contrato/);
+    expect(verificarInvocacionV2(liberar, 'entregar_fase', { ...contexto, fase: 0 })).toMatch(/llama a/);
+    expect(verificarInvocacionV2(liberar, 'liberar_fase', { ...contexto, fase: 0 })).toBeNull();
+    expect(verificarInvocacionV2(liberar, 'liberar_fase', { ...contexto, fase: 0, contrato: 'COTRO' })).toMatch(/otro contrato/);
   });
 
   it('el pago directo tiene que ser por el monto acordado', () => {
@@ -51,7 +51,20 @@ describe('verificación de transacciones del contrato v2', () => {
 
   it('los vencimientos llevan el número de pedido primero', () => {
     const inv = invocacion('cobrar_por_vencimiento', [arg.u64('1790000000123'), arg.u32(1)]);
-    expect(verificarInvocacionV2(inv, 'cobrar_por_vencimiento', contexto)).toBeNull();
+    expect(verificarInvocacionV2(inv, 'cobrar_por_vencimiento', { ...contexto, fase: 1 })).toBeNull();
+  });
+
+  it('la fase que se registra tiene que ser la de la transacción', () => {
+    // Una disputa abierta en la fase 2 no se puede registrar (con su motivo) en la fase 1.
+    const disputa = invocacion('abrir_disputa', [arg.direccion(cliente), arg.u64('1790000000123'), arg.u32(1)]);
+    expect(verificarInvocacionV2(disputa, 'abrir_disputa', { ...contexto, fase: 1 })).toBeNull();
+    expect(verificarInvocacionV2(disputa, 'abrir_disputa', { ...contexto, fase: 0 })).toMatch(/fase no coincide/);
+    expect(verificarInvocacionV2(disputa, 'abrir_disputa', contexto)).toMatch(/falta indicar la fase/);
+    const entrega = invocacion('entregar_fase', [arg.direccion(proveedor), arg.u64('1790000000123'), arg.u32(0), arg.bytes32('ab'.repeat(32))]);
+    expect(verificarInvocacionV2(entrega, 'entregar_fase', { ...contexto, fase: 1 })).toMatch(/fase no coincide/);
+    // rechazar no lleva fase.
+    const rechazar = invocacion('rechazar', [arg.direccion(proveedor), arg.u64('1790000000123')]);
+    expect(verificarInvocacionV2(rechazar, 'rechazar', contexto)).toBeNull();
   });
 });
 

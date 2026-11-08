@@ -500,6 +500,7 @@ export class PagosService {
       walletsProveedor: pedido.direccion_proveedor ? [pedido.direccion_proveedor] : await walletsDe(pedido.proveedor),
       plan: d.funcion === 'crear_pedido' ? await this.planEnContrato(pedido.id) : undefined,
       monto: d.funcion === 'pagar_directo' ? BigInt(usdcAUnidades(formatoUsdc(String(pedido.monto_usdc)))) : undefined,
+      fase: d.fase,
     });
     if (error) throw new BadRequestException(`La transacción no corresponde a este paso: ${error}`);
 

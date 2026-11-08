@@ -57,6 +57,8 @@ export interface ContextoVerificacionV2 {
   plan?: readonly FaseEnContrato[];
   /** Monto acordado (pago directo), en unidades del token. */
   monto?: bigint;
+  /** Fase del paso que se registra (las funciones que la llevan). */
+  fase?: number;
 }
 
 /**
@@ -67,6 +69,13 @@ export function verificarInvocacionV2(inv: Invocacion, funcion: FuncionV2, c: Co
   if (inv.contrato !== c.contrato) return 'es de otro contrato';
   if (inv.funcion !== funcion) return `llama a "${inv.funcion}" y este paso es "${funcion}"`;
   if (!mismoValor(inv.args[POSICION_ID[funcion]], c.numero)) return 'el número de pedido no coincide';
+  // La fase que se registra tiene que ser la de la transacción: si no, el motivo, la decisión o el sello de las
+  // pruebas quedarían en otra fase.
+  const posicionFase = POSICION_FASE[funcion];
+  if (posicionFase !== undefined) {
+    if (c.fase === undefined) return 'falta indicar la fase';
+    if (!mismoValor(inv.args[posicionFase], c.fase)) return 'la fase no coincide';
+  }
   if (funcion === 'crear_pedido' || funcion === 'pagar_directo') {
     const [cliente, proveedor] = inv.args;
     if (typeof cliente !== 'string' || !c.walletsCliente.includes(cliente)) return 'el cliente no es una wallet de quien hizo el pedido';
