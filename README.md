@@ -2,210 +2,210 @@
 
 # WorkVille 🏘️
 
-### Un pueblo digital donde los freelancers de Bolivia y Latinoamérica ofrecen sus servicios y cobran de forma segura en USDC, con un contrato de garantía en Stellar.
+### A digital village where freelancers in Bolivia and Latin America offer their services and get paid safely in USDC, through an escrow contract on Stellar.
 
-[![Demo](https://img.shields.io/badge/demo-myworkville.com-b5523b?style=flat-square)](https://myworkville.com)
-[![Contrato Soroban en testnet](https://img.shields.io/badge/Soroban-en%20vivo%20en%20testnet-7b61ff?style=flat-square)](https://stellar.expert/explorer/testnet/contract/CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO)
+[![Live demo](https://img.shields.io/badge/demo-myworkville.com-b5523b?style=flat-square)](https://myworkville.com)
+[![Soroban contract on testnet](https://img.shields.io/badge/Soroban-live%20on%20testnet-7b61ff?style=flat-square)](https://stellar.expert/explorer/testnet/contract/CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO)
 [![CI](https://github.com/ozioziel/Workville/actions/workflows/ci.yml/badge.svg)](https://github.com/ozioziel/Workville/actions/workflows/ci.yml)
-[![Pagos en USDC](https://img.shields.io/badge/pagos-USDC%20de%20Circle-2775ca?style=flat-square)](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA)
-[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-e8b04a?style=flat-square)](LICENSE)
+[![USDC payments](https://img.shields.io/badge/payments-Circle%20USDC-2775ca?style=flat-square)](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA)
+[![License: MIT](https://img.shields.io/badge/license-MIT-e8b04a?style=flat-square)](LICENSE)
 
-**[Probarlo](https://myworkville.com)**, [Cómo funciona](#cómo-funciona), [Seguridad](#seguridad), [Por qué Stellar](#por-qué-stellar), [Qué está en vivo](#qué-está-en-vivo-hoy), [Próximos 30 días](#los-próximos-30-días), [English](README.en.md)
+**[Try it](https://myworkville.com)**, [How it works](#how-it-works), [Security](#security), [Why Stellar](#why-stellar), [What is live](#what-is-live-today), [Next 30 days](#the-next-30-days), [Español](README-ES.md)
 
-<img src="docs/capturas/readme/inicio.jpg" alt="Portada de WorkVille: una villa 2D con locales de freelancers, teleféricos y la torre de datos" width="860">
+<img src="docs/capturas/readme/inicio.jpg" alt="WorkVille home page: a 2D village with freelancers' shops, cable cars and the data tower" width="860">
 
 </div>
 
 ---
 
-Contratar a alguien que no conoces, por internet, tiene un problema de los dos lados. El cliente teme pagar y no recibir nada. El freelancer teme entregar y no cobrar. Las plataformas internacionales lo resuelven cobrando comisiones altas y reteniendo el dinero durante días, y cobrar desde otro país sigue siendo caro. Lo que queda es pagar «a confianza» por transferencia o QR, o pedir un adelanto que el cliente no quiere dar.
+Hiring someone you don't know, online, has a problem on both sides. The client fears paying and getting nothing. The freelancer fears delivering and never getting paid. International platforms solve it by charging high fees and holding the money for days, and getting paid from another country is still expensive. What's left is paying "on trust" by bank transfer or QR, or asking for an advance the client doesn't want to give.
 
-**WorkVille pone el dinero en un contrato, no en manos de nadie.** Recorres un pueblo en 2D donde cada freelancer tiene su local. Entras, ves sus servicios, hablas con él y lo contratas ahí mismo. Pagas en USDC a un contrato de garantía en Soroban que libera el dinero por fases, a medida que se entrega el trabajo. Si el freelancer no entrega a tiempo, el dinero vuelve. Si el cliente no responde, el freelancer cobra igual. Si hay un desacuerdo, decide un árbitro.
+**WorkVille puts the money in a contract, not in anyone's hands.** You walk through a 2D village where every freelancer has a shop. You go in, see their services, chat, and hire them right there. You pay in USDC into a Soroban escrow contract that releases the money phase by phase as the work is delivered. If the freelancer misses the deadline, the money goes back. If the client never responds, the freelancer still gets paid. If they disagree, an arbiter decides.
 
-Nadie, ni siquiera el equipo de WorkVille, puede llevarse el dinero de un pedido. Y para usarlo no hace falta saber de cripto: se entra con el correo.
+Nobody, not even the WorkVille team, can take the money of an order. And using it takes no crypto knowledge: you sign in with your email.
 
-Nuestro primer mercado es Bolivia, donde está el equipo y donde recibir y guardar dólares es especialmente difícil. El producto está pensado para trabajo entre países de toda la región.
+Our first market is Bolivia, where the team is and where receiving and holding dollars is especially hard. The product is built for cross-border work across the region.
 
-## Cómo se usa
+## How people use it
 
-Un interruptor arriba al centro cambia el **modo de la villa**:
+A switch at the top center changes the **village mode**:
 
-- **«Quiero contratar»:** las casas son los locales de los freelancers. Entras, ves sus servicios y su portafolio colgado en la pared, y pides.
-- **«Quiero trabajar»:** las mismas villas muestran un cartel por cada **«Se busca»**, lo que alguien necesita. Entras y mandas tu propuesta.
+- **"I want to hire":** the houses are the freelancers' shops. Go in, see their services and the portfolio hanging on the wall, and order.
+- **"I want to work":** the same villages show a sign for every **"Wanted"** post, something someone needs. Go in and send your proposal.
 
-Hay **cuatro villas** (Creativo, Tech, Audiovisual y Academy), cada una con su arquitectura, y una **Plaza principal** con un edificio por cada persona que tiene locales. Cada persona arma su personaje, y cada freelancer decora su casa por fuera y por dentro.
+There are **four villages** (Creative, Tech, Audiovisual and Academy), each with its own architecture, and a **Main Plaza** with one building per person who has shops. Everyone builds their own character, and every freelancer decorates their house inside and out.
 
 <div align="center">
-<img src="docs/capturas/readme/villas.jpg" alt="Las cuatro villas y la plaza, con sus edificios centrales y el teleférico" width="860">
+<img src="docs/capturas/readme/villas.jpg" alt="The four villages and the plaza, with their central buildings and the cable car" width="860">
 </div>
 
-## Cómo funciona
+## How it works
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as Cliente (navegador)
-    participant API as API de WorkVille
+    participant C as Client (browser)
+    participant API as WorkVille API
     participant E as Escrow v2 (Soroban)
     participant F as Freelancer
-    C->>API: pide el servicio, el freelancer acepta el plan de fases
-    API->>C: arma la transacción sin firmar (simulada)
-    C->>C: la firma su wallet (o Pollar, si entró con correo)
-    C->>API: envía la transacción firmada
-    API->>API: comprueba que es la misma que armó
-    API->>E: crear_pedido: el USDC queda en el contrato
-    F->>E: entregar_fase, con la huella SHA-256 de sus pruebas
-    C->>E: liberar_fase: el freelancer cobra, menos la comisión
-    Note over E: si vence un plazo, cualquiera puede ejecutar<br/>el reembolso o el cobro: el dinero va a quien corresponde
+    C->>API: orders the service, the freelancer accepts the phase plan
+    API->>C: builds the unsigned transaction (simulated)
+    C->>C: their wallet signs it (or Pollar, for email users)
+    C->>API: submits the signed transaction
+    API->>API: checks it is the same one it built
+    API->>E: crear_pedido: the USDC stays in the contract
+    F->>E: entregar_fase, with the SHA-256 fingerprint of the proofs
+    C->>E: liberar_fase: the freelancer is paid, minus the fee
+    Note over E: when a deadline passes, anyone can trigger<br/>the refund or the payout: the money goes to whoever is owed
 ```
 
-1. **Se acuerda el plan.** El freelancer acepta el pedido con su precio y, si es por etapas, un plan de 2 a 5 fases con monto y fecha límite cada una.
-2. **Se paga al contrato.** La API arma la transacción y la firma la wallet de la persona, en el navegador. La API solo la envía si es idéntica a la que armó, y después vuelve a leer el pedido en el contrato: **el contrato es la fuente de verdad del dinero**.
-3. **Se entrega y se libera fase por fase.** El freelancer sube sus pruebas y el contrato guarda su huella. El cliente libera la fase o pide cambios (hasta dos por fase).
-4. **Los plazos se cumplen solos.** Si el freelancer no entrega a tiempo, el cliente recupera el dinero. Si el cliente no revisa a tiempo, el freelancer cobra. Una llave de mantenimiento ejecuta esos vencimientos, y nunca puede mandar el dinero a otro lado.
-5. **Las disputas tienen árbitro.** Una fase en disputa se congela. El árbitro decide a favor del cliente, del freelancer o mitad y mitad. Si no decide en 14 días, se reparte 50/50.
+1. **The plan is agreed.** The freelancer accepts the order with a price and, for phased work, a plan of 2 to 5 phases, each with an amount and a deadline.
+2. **The contract is paid.** The API builds the transaction and the person's wallet signs it in the browser. The API only submits it if it is identical to the one it built, then re-reads the order from the contract: **the contract is the source of truth for money**.
+3. **Phase by phase.** The freelancer uploads proofs and the contract stores their fingerprint. The client releases the phase or asks for changes (up to two per phase).
+4. **Deadlines enforce themselves.** If the freelancer misses the deadline, the client gets the money back. If the client doesn't review in time, the freelancer is paid. A maintenance key triggers those timeouts, and it can never send the money anywhere else.
+5. **Disputes have an arbiter.** A disputed phase is frozen. The arbiter decides for the client, the freelancer or half and half. If there is no decision within 14 days, it splits 50/50.
 
-**Tres formas de pagar:**
+**Three ways to pay:**
 
-| Forma | Cómo funciona | Comisión |
+| Method | How it works | Fee |
 |---|---|---:|
-| Directo | El pago va al freelancer en la misma transacción. Para clientes de confianza | 1 % |
-| Con garantía | El dinero espera en el contrato hasta que confirmas la entrega | 3 % |
-| Por etapas | Igual, con 2 a 5 fases que se entregan y liberan una por una | 3 % por fase |
+| Direct | The payment reaches the freelancer in the same transaction. For trusted clients | 1% |
+| Escrow | The money waits in the contract until the client confirms delivery | 3% |
+| Phased | Same, with 2 to 5 phases delivered and released one by one | 3% per phase |
 
 <div align="center">
-<img src="docs/capturas/readme/como-funciona.jpg" alt="Página «Cómo funciona»: pides, entregan, confirmas" width="860">
+<img src="docs/capturas/readme/como-funciona.jpg" alt="How it works page: you order, they deliver, you confirm" width="860">
 </div>
 
-## Por qué Stellar
+## Why Stellar
 
-- **USDC de verdad, en segundos y por centavos.** Un pago con garantía de USD 20 tiene sentido porque la comisión de red es una fracción de centavo, no un porcentaje.
-- **Soroban para la garantía.** El contrato retiene el dinero y solo puede soltarlo según sus reglas: ni el cliente, ni el freelancer, ni el equipo pueden saltárselas.
-- **Multifirma nativa.** El admin del contrato es una cuenta 2 de 3 y el árbitro, otra cuenta distinta 1 de 2. Son cuentas de Stellar comunes, sin contratos extra.
-- **Sin cripto a la vista.** Con Pollar, una persona entra con su correo y recibe una wallet. Pollar le patrocina la cuenta y la trustline de USDC, así que no necesita XLM para empezar.
-- **Verificable por cualquiera.** Cada paso de un pedido deja su transacción en la red, y el código desplegado se puede comparar con el del repositorio (SEP-55).
+- **Real USDC, in seconds, for cents.** A USD 20 escrow payment makes sense because the network fee is a fraction of a cent, not a percentage.
+- **Soroban for the escrow.** The contract holds the money and can only release it by its rules: not the client, the freelancer or the team can skip them.
+- **Native multisig.** The contract admin is a 2-of-3 account and the arbiter a separate 1-of-2 account. Plain Stellar accounts, no extra contracts.
+- **No crypto in sight.** With Pollar, a person signs in with an email and gets a wallet. Pollar sponsors the account and the USDC trustline, so no XLM is needed to start.
+- **Verifiable by anyone.** Every step of an order leaves its transaction on the network, and the deployed code can be matched with the repository (SEP-55).
 
-## Qué está en vivo hoy
+## What is live today
 
-Todo en **testnet**: aparece la franja «Modo de prueba: el dinero no es real».
+All on **testnet**: the app shows a "Test mode: the money is not real" banner.
 
-| Parte | Estado | Evidencia |
+| Component | Status | Evidence |
 |---|---|---|
-| Contrato **escrow v2** | Desplegado en testnet | [`CB42MFK5…HHUVO`](https://stellar.expert/explorer/testnet/contract/CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO), 28 pruebas (incluida una de propiedades y la de actualización con el `.wasm` real), Release verificado `contratos-2` |
-| Pagos directos, con garantía y por etapas | En vivo | Plan de fases, pruebas por fase, cambios, disputas y vencimientos |
-| Admin y árbitro multifirma | En vivo | [Admin 2 de 3](https://stellar.expert/explorer/testnet/account/GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU) y [árbitro 1 de 2](https://stellar.expert/explorer/testnet/account/GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB), con su [guía](docs/multifirma.md) |
-| Entrar con correo (Pollar) | En vivo | Wallet embebida; cuenta y trustline de USDC patrocinadas por Pollar. Google está listo pero apagado |
-| Entrar con wallet | En vivo | Freighter y otras con Stellar Wallets Kit, también por QR (WalletConnect); firma SEP-53 |
-| Villas 2D, «Se busca», Plaza, portafolio y CV | En vivo | [myworkville.com](https://myworkville.com) |
-| Confianza | En vivo | KYC (Didit, en sandbox) con insignia ✔, reportar y bloquear, avisos por correo y en el navegador |
-| Recarga con el QR del banco y retiro al banco | **Simulados** | QR con el formato real del QR Simple, marcado SIMULADO; USDC real de testnet desde una caja. La rampa con Pollar está programada para Bolivia, Brasil (Pix) y Argentina ([qué está simulado](docs/simulaciones.md)) |
-| Calidad | Pruebas en el CI | Contratos v1 y v2, 78 casos de punta a punta en la API contra Supabase local, y pruebas de la web y del código compartido |
+| **Escrow v2** contract | Deployed on testnet | [`CB42MFK5…HHUVO`](https://stellar.expert/explorer/testnet/contract/CB42MFK5XZJBXWAHYXI6VCP3N75GQBNPAX77JK6W3ARIRK7N6YKHHUVO), 28 tests (including a property test and the upgrade test with the real `.wasm`), verified release `contratos-2` |
+| Direct, escrow and phased payments | Live | Phase plans, per-phase proofs, change requests, disputes and timeouts |
+| Multisig admin and arbiter | Live | [Admin 2-of-3](https://stellar.expert/explorer/testnet/account/GD74KD7J7MZIB6R4O4NZC3BEMAEGAB2UOMZKYSCVHOPFBXPFKFINNNTU) and [arbiter 1-of-2](https://stellar.expert/explorer/testnet/account/GBGNHOJB22DVGVJBG47D7NDQVQPSHARIDWYL53R3XTA3GB3TOSBEZDBB), with their [guide](docs/multifirma.md) |
+| Email sign-in (Pollar) | Live | Embedded wallet; account and USDC trustline sponsored by Pollar. Google is ready but off |
+| Wallet sign-in | Live | Freighter and others through Stellar Wallets Kit, also by QR (WalletConnect); SEP-53 signature |
+| 2D villages, "Wanted" board, Plaza, portfolio and CV | Live | [myworkville.com](https://myworkville.com) |
+| Trust | Live | KYC (Didit, sandbox) with a ✔ badge, report and block, email and browser notifications |
+| Top-up with a bank QR and withdrawal to a bank | **Simulated** | A QR in the real QR Simple format, marked SIMULATED; real testnet USDC from a cash wallet. The Pollar ramp is coded for Bolivia, Brazil (Pix) and Argentina ([what is simulated](docs/simulaciones.md), in Spanish) |
+| Quality | Tests in CI | Escrow v1 and v2 contracts, 78 end-to-end API cases against local Supabase, plus web and shared-code tests |
 
-**Reconocimientos.** WorkVille obtuvo el **primer lugar en el Demo Day de Stellar Élite Bolivia** (10 de octubre de 2026), entre 46 graduados del programa, y se presentó en la llamada de la comunidad BAF × Stellar (3 de noviembre de 2026).
+**Recognition.** WorkVille won **first place at the Stellar Élite Bolivia Demo Day** (October 10, 2026), among 46 program graduates, and was presented at the BAF × Stellar community call (November 3, 2026).
 
 <div align="center">
-<img src="docs/capturas/readme/comisiones.jpg" alt="Página de comisiones: directo 1 %, con garantía 3 %, por etapas 3 % por fase" width="860">
+<img src="docs/capturas/readme/comisiones.jpg" alt="Fees page: direct 1%, escrow 3%, phased 3% per phase" width="860">
 </div>
 
-## Seguridad
+## Security
 
-> **El dinero de un pedido solo puede salir del contrato hacia el cliente, el freelancer o la tesorería, y siempre según las reglas del contrato.** Lo que sigue abierto no es el contrato, son las personas que lo administran: por eso todo eso es público y se puede vigilar.
+> **An order's money can only leave the contract to the client, the freelancer or the treasury, and always by the contract's rules.** What stays open is not the contract but the people who administer it: that is why all of it is public and can be watched.
 
-**Lo que está cerrado**
+**What is closed**
 
-| Riesgo | Por qué no puede pasar |
+| Risk | Why it can't happen |
 |---|---|
-| Que el equipo se lleve el dinero de un pedido | El contrato no tiene ninguna función para eso; el admin no puede mover fondos de pedidos |
-| Cobrar sin entregar o sin que el cliente libere | Solo se cobra cuando el cliente libera la fase o vence su plazo de revisión |
-| Que cambien la comisión de un pedido ya pagado | Cada pedido conserva la comisión y los plazos con que se creó |
-| Que el admin resuelva disputas | Solo el árbitro resuelve, ni siquiera el admin (probado) |
-| Cambiar el código de un día para otro | Una actualización exige 7 días de aviso, fijos en el contrato |
-| Que el servidor firme por los usuarios | El servidor nunca firma pagos: arma la transacción, la wallet la firma y la API comprueba que sea la misma |
-| Un hash falso o de otra transacción | Cada pago se verifica leyendo la red; un hash no se acepta dos veces |
+| The team taking an order's money | The contract has no function for that; the admin cannot move order funds |
+| Getting paid without delivering or without the client's release | Payment only happens when the client releases the phase or its review period expires |
+| Changing the fee of an order already paid | Every order keeps the fee and deadlines it was created with |
+| The admin resolving disputes | Only the arbiter resolves, not even the admin (tested) |
+| Changing the code overnight | An upgrade requires 7 days of notice, fixed in the contract |
+| The server signing for users | The server never signs payments: it builds the transaction, the wallet signs it, and the API checks it is the same |
+| A fake hash or someone else's transaction | Every payment is verified by reading the network; a hash is never accepted twice |
 
-**Lo que sigue abierto, y qué hay contra eso**
+**What stays open, and what stands against it**
 
-| Riesgo | Qué hay |
+| Risk | What there is |
 |---|---|
-| El admin cambia el árbitro o la tesorería | Admin y árbitro son multifirmas con firmantes distintos, y cada cambio emite `ConfigActualizada`, que la app convierte en un aviso |
-| Una actualización maliciosa después de los 7 días | El aviso queda en la red (`ActualizacionPropuesta`); en el sprint se publica en una página de transparencia |
-| El contrato no está auditado | Corre solo en testnet. La auditoría externa es requisito antes de mainnet ([documento para el auditor](docs/contrato-v2.md)) |
+| The admin changing the arbiter or the treasury | Admin and arbiter are multisig accounts with different signers, and every change emits `ConfigActualizada`, which the app turns into a notice |
+| A malicious upgrade after the 7 days | The notice stays on chain (`ActualizacionPropuesta`); the sprint publishes it on a transparency page |
+| The contract is not audited | It only runs on testnet. An external audit is required before mainnet ([auditor notes](docs/contrato-v2.md), in Spanish) |
 
-El análisis completo, con los riesgos conocidos y cómo comprobar el código desplegado, está en [docs/contrato-v2.md](docs/contrato-v2.md). En mainnet, la API no arranca si queda algo de prueba en la configuración (`npm run mainnet:revisar`).
+The full analysis, with known risks and how to check the deployed code, is in [docs/contrato-v2.md](docs/contrato-v2.md). On mainnet, the API refuses to start if anything test-like remains in the configuration (`npm run mainnet:revisar`).
 
-**Privacidad.** El KYC guarda solo una huella HMAC del documento. Pedidos, chat y disputas solo los ven sus participantes y el árbitro, por RLS. La web nunca escribe directo en la base: todo pasa por la API.
+**Privacy.** KYC stores only an HMAC fingerprint of the document. Orders, chat and disputes are visible only to their participants and the arbiter, through RLS. The web never writes to the database directly: everything goes through the API.
 
-## Cómo se compara
+## How it compares
 
-| | Plataformas internacionales de freelance | Transferencia o QR del banco | [Trustless Work](https://docs.trustlesswork.com) | WorkVille |
+| | International freelance platforms | Bank transfer or QR | [Trustless Work](https://docs.trustlesswork.com) | WorkVille |
 |---|---|---|---|---|
-| Qué es | Un mercado con pago retenido por la empresa | Un pago directo | Escrow como servicio en Soroban, para que otras apps lo integren | Un mercado con escrow propio en Soroban |
-| Quién tiene el dinero mientras se trabaja | La plataforma | El freelancer, desde el primer momento | Un contrato | Un contrato |
-| Quién puede verificarlo | Nadie de afuera | Nadie | Cualquiera, en la red | Cualquiera, en la red |
-| Pensado para | Cualquier país, con comisiones altas | Clientes de confianza | Desarrolladores de otras apps | Freelancers y clientes, sin saber de cripto |
+| What it is | A marketplace where the company holds the payment | A direct payment | Escrow as a service on Soroban, for other apps to integrate | A marketplace with its own Soroban escrow |
+| Who holds the money during the work | The platform | The freelancer, from the start | A contract | A contract |
+| Who can verify it | Nobody outside | Nobody | Anyone, on chain | Anyone, on chain |
+| Built for | Any country, with high fees | Trusted clients | Developers of other apps | Freelancers and clients who know nothing about crypto |
 
-Trustless Work es una buena infraestructura de escrow en Stellar para quien quiere integrarla en su app. WorkVille es el producto final para el usuario: la villa, el pedido, el plan de fases, el árbitro y la reputación, sobre un contrato propio.
+Trustless Work is good escrow infrastructure on Stellar for anyone who wants to integrate it into their app. WorkVille is the end-user product: the village, the order, the phase plan, the arbiter and the reputation, on its own contract.
 
-## Los próximos 30 días
+## The next 30 days
 
-Propuesta de sprint para los Instawards LATAM (desde el 1 de diciembre de 2026), con una prueba que cualquiera puede revisar desde afuera:
+Our Instawards LATAM sprint proposal (from December 1, 2026), each deliverable with a check anyone can run from outside:
 
-| Entregable | Listo cuando |
+| Deliverable | Done when |
 |---|---|
-| **Pagar sin XLM** para quien entra con correo, con las comisiones patrocinadas por Pollar (fee-bump) | 5 cuentas nuevas completan un pedido con garantía sin XLM, y en stellar.expert cada transacción es un fee-bump que no pagó la persona |
-| **Reputación verificable en Stellar**: un contrato `credenciales`, sin fondos, que registra cada trabajo terminado con sus clientes distintos | El contrato está desplegado con su Release verificado, 5 pedidos terminados tienen su credencial, y la placa de la casa y `/verificar` coinciden con la red |
-| **Transparencia y gobernanza**: una página pública con el USDC que guarda el contrato y quién lo controla | `/transparencia` abre sin sesión y el USDC que muestra coincide con el saldo del contrato en stellar.expert |
+| **Pay without XLM** for email users, with fees sponsored by Pollar (fee-bump) | 5 new accounts complete an escrow order without XLM, and on stellar.expert every transaction is a fee-bump the person did not pay |
+| **Verifiable reputation on Stellar**: a fund-less `credenciales` contract that records every completed job with its distinct clients | The contract is deployed with a verified release, 5 completed orders have their credential, and the house plaque and `/verificar` match the chain |
+| **Transparency and governance**: a public page showing the USDC the contract holds and who controls it | `/transparencia` opens without signing in and the USDC it shows matches the contract balance on stellar.expert |
 
-Después: mainnet con la rampa de Pollar (primero Bolivia y después Brasil y Argentina), cuando el contrato pase una auditoría externa.
+After that: mainnet with Pollar's ramp (Bolivia first, then Brazil and Argentina), once the contract passes an external audit.
 
-## Correrlo en tu PC
+## Run it locally
 
-Necesitas **Node 22** o superior y **Docker Desktop** abierto (el setup levanta Supabase local en Docker). Para los contratos: **Rust** con el target `wasm32v1-none` (`rustup target add wasm32v1-none`) y, para compilarlos a `.wasm`, la [Stellar CLI](https://developers.stellar.org/docs/tools/cli) 25.2 o superior.
+Requires **Node 22+** and **Docker Desktop** running (setup starts a local Supabase in Docker). For the contracts: **Rust** with the `wasm32v1-none` target (`rustup target add wasm32v1-none`) and, to build them into `.wasm`, the [Stellar CLI](https://developers.stellar.org/docs/tools/cli) 25.2 or later.
 
 ```bash
 npm install
-npm run hooks     # una vez por clon: el commit se rechaza si atribuye autoría a una IA
-npm run setup     # Supabase local, .env, migraciones, wallets de ejemplo y datos
-npm run dev       # API en :3000 y web en http://localhost:5173
+npm run hooks     # once per clone: rejects commits that credit an AI as author
+npm run setup     # local Supabase, .env, migrations, sample wallets and data
+npm run dev       # API on :3000 and web on http://localhost:5173
 ```
 
-**Para entrar:** con tu correo (si `POLLAR_API_KEY` está configurada), con Freighter u otra wallet en testnet (también por QR) o, en desarrollo, con *«entrar con una llave de prueba»* y una llave de `.seed-keys.json`. Sin las llaves de los servicios externos (Didit, Mux, Pollar, Resend, VAPID, WalletConnect) la app funciona igual y oculta esas funciones.
+**Signing in:** with your email (if `POLLAR_API_KEY` is set), with Freighter or another testnet wallet (also by QR) or, in development, with *"sign in with a test key"* and a key from `.seed-keys.json`. Without the external service keys (Didit, Mux, Pollar, Resend, VAPID, WalletConnect) the app still works and hides those features.
 
-**Para probar pagos** hace falta un contrato: el `.env` local trae `ESCROW_V2_CONTRACT_ID` vacío. Despliega el tuyo en testnet siguiendo la [guía de Stellar Lab](docs/guia-stellar-lab.md#contrato-v2) y copia sus datos (contrato, tesorería, árbitro, comisiones y plazos) al `.env`; tienen que coincidir con los del constructor.
+**To try payments** you need a contract: the local `.env` comes with `ESCROW_V2_CONTRACT_ID` empty. Deploy your own on testnet with the [Stellar Lab guide](docs/guia-stellar-lab.md#contrato-v2) (in Spanish) and copy its data (contract, treasury, arbiter, fees and deadlines) into `.env`; they must match the constructor.
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `npm test` | Pruebas de `shared`, de la API (contra Supabase local) y de la web |
-| `cd contracts && cargo test` | Pruebas de los contratos |
-| `npm run contract:build` | Compila los contratos a `contracts/dist/*.wasm` e imprime su hash |
-| `npm run db:reset` | Borra la base local y la vuelve a crear con los datos de ejemplo |
-| `npm run mainnet:revisar` | Revisa el `.env` como si fuera mainnet y dice qué falta |
+| `npm test` | Tests for `shared`, the API (against local Supabase) and the web |
+| `cd contracts && cargo test` | Contract tests |
+| `npm run contract:build` | Builds the contracts into `contracts/dist/*.wasm` and prints their hash |
+| `npm run db:reset` | Wipes the local database and recreates it with sample data |
+| `npm run mainnet:revisar` | Checks the `.env` as if it were mainnet and lists what is missing |
 
-Para desplegar: [Supabase](docs/guia-supabase.md), [contratos en Stellar Lab](docs/guia-stellar-lab.md) y [VPS](docs/despliegue-vps.md).
+Deployment guides (in Spanish): [Supabase](docs/guia-supabase.md), [contracts in Stellar Lab](docs/guia-stellar-lab.md) and [VPS](docs/despliegue-vps.md).
 
-## Repositorio
+## Repository
 
 ```
-apps/web/            React 19 + Vite + Phaser 3: las villas 2D, los paneles y el arte en SVG
-apps/api/            NestJS 11 + Prisma 7: pedidos, transacciones, sincronización con la red, KYC
-packages/shared/     Estados del pedido, reglas (comisiones, plazos, límites), textos del contrato
-contracts/           Rust + Soroban: escrow v1, escrow v2 y el token de prueba; .wasm en dist/
-deploy/              Docker Compose, Caddy y scripts del VPS
-docs/                Arquitectura, contrato, multifirmas, simulaciones, mainnet y guías
+apps/web/            React 19 + Vite + Phaser 3: the 2D villages, the panels and the SVG art
+apps/api/            NestJS 11 + Prisma 7: orders, transactions, network sync, KYC
+packages/shared/     Order states, rules (fees, deadlines, limits), contract texts
+contracts/           Rust + Soroban: escrow v1, escrow v2 and the test token; .wasm in dist/
+deploy/              Docker Compose, Caddy and the VPS scripts
+docs/                Architecture, contract, multisig, simulations, mainnet and guides
 ```
 
-Documentación: [descripción](docs/descripcion.md), [arquitectura](docs/arquitectura.md), [contrato v2 (para el auditor)](docs/contrato-v2.md), [cuentas y contratos desplegados](docs/cuentas-y-contratos.md), [multifirmas](docs/multifirma.md), [qué está simulado](docs/simulaciones.md), [pasar a mainnet](docs/mainnet.md) y [roadmap](docs/roadmap.md).
+The repository, its code and its documentation are in Spanish: [description](docs/descripcion.md), [architecture](docs/arquitectura.md), [escrow v2 (for the auditor)](docs/contrato-v2.md), [deployed accounts and contracts](docs/cuentas-y-contratos.md), [multisig](docs/multifirma.md), [what is simulated](docs/simulaciones.md), [going to mainnet](docs/mainnet.md) and [roadmap](docs/roadmap.md).
 
-## Equipo
+## Team
 
-WorkVille nació en Bolivia. Lo construyen **Oziel Rodman Ramos Torrez** ([@ozioziel](https://github.com/ozioziel)), fundador y diseñador UX/UI; **Luis Daniel Rojas Caceres** ([@daniel69zz](https://github.com/daniel69zz)), toda la parte técnica: contratos en Soroban, integración con Stellar y Pollar, API y backend, y despliegue; y **Rafael Einar Chalco Huanca** ([@Einar-KAILOOP](https://github.com/Einar-KAILOOP)), con aportes de [@Holorololo](https://github.com/Holorololo). Somos parte del capítulo de Embajadores de Stellar Bolivia.
+WorkVille was born in Bolivia. It is built by **Oziel Rodman Ramos Torrez** ([@ozioziel](https://github.com/ozioziel)), founder and UX/UI designer; **Luis Daniel Rojas Caceres** ([@daniel69zz](https://github.com/daniel69zz)), all the technical work: Soroban contracts, the Stellar and Pollar integration, the API and backend, and deployment; and **Rafael Einar Chalco Huanca** ([@Einar-KAILOOP](https://github.com/Einar-KAILOOP)), with contributions from [@Holorololo](https://github.com/Holorololo). We are part of the Stellar Ambassadors Bolivia chapter.
 
-## Contribuir
+## Contributing
 
-Los issues y pull requests son bienvenidos. **Si encuentras una forma de mover dinero de un pedido fuera de las reglas del contrato, abre un issue**: es el reporte más útil que hay. Todo el repo está en español, también los commits (`feat(web): …`, `fix(api): …`).
+Issues and pull requests are welcome. **If you find a way to move an order's money outside the contract's rules, open an issue**: it is the most useful report there is. The whole repository is in Spanish, commits included (`feat(web): …`, `fix(api): …`).
 
-## Licencia
+## License
 
-Código abierto bajo la licencia [MIT](LICENSE).
+Open source under the [MIT](LICENSE) license.
 
-**Créditos:** fuente [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) (SIL Open Font License). El arte de las villas, las casas y los personajes está dibujado en vectores para WorkVille (`apps/web/src/arte/`); los personajes se inspiran en *Tiny Dungeon* de [Kenney](https://kenney.nl). Los gráficos anteriores de Kenney (*Tiny Town* y *Tiny Dungeon*, licencia CC0) ya no se usan, pero se conservan en `apps/web/public/assets/kenney/`.
+**Credits:** [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) font (SIL Open Font License). The art of the villages, houses and characters is drawn in vectors for WorkVille (`apps/web/src/arte/`); the characters are inspired by [Kenney](https://kenney.nl)'s *Tiny Dungeon*. The earlier Kenney graphics (*Tiny Town* and *Tiny Dungeon*, CC0) are no longer used but are kept in `apps/web/public/assets/kenney/`.
