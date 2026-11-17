@@ -1,0 +1,8 @@
+# WorkVille: se indexan las páginas públicas; la API y la villa (la app) no.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /contratar
+Disallow: /trabajar
+
+Sitemap: https://myworkville.com/sitemap.xml

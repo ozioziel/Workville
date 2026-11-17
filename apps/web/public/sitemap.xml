@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Páginas públicas de WorkVille para los buscadores. Las rutas salen de apps/web/src/lib/rutas.ts.
+     /contratar y /trabajar (la villa) no van: son la app, no páginas para indexar. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://myworkville.com/</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://myworkville.com/que-es</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://myworkville.com/como-funciona</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://myworkville.com/villas</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://myworkville.com/comisiones</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+</urlset>
