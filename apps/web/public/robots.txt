@@ -1,6 +1,8 @@
 # WorkVille: se indexan las páginas públicas; la API y la villa (la app) no.
+# /api/config sí: todas las páginas la piden al arrancar, y sin ella Google ve la pantalla de error (soft 404).
 User-agent: *
 Allow: /
+Allow: /api/config
 Disallow: /api/
 Disallow: /contratar
 Disallow: /trabajar
